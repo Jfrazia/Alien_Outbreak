@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
+#include "RockProjectileActor.h"
 #include "Alien_BreakOutBossOne.generated.h"
 
 UCLASS()
@@ -27,8 +28,20 @@ private:
 	int summonCoolDown;
 	int attackCoolDown;
 	int teleportCoolDown;
+	
+	int maxNumRock;
+	int rockLeft;
+	TArray<ARockProjectileActor*> rocks;
 
 	TArray<FVector> teleportLocation;
+
+	FTimerHandle TeleportTimerHandle;
+	FTimerHandle SummonTimerHandle;
+	FTimerHandle AttackTimerHandle;
+
+	void Teleport();
+	void Summon();
+	void Attack();
 
 public:
 	UPROPERTY(BlueprintReadOnly)

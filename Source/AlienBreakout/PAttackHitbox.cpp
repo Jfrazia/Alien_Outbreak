@@ -52,7 +52,7 @@ void APAttackHitbox::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor*
 	if (OtherActor->IsA(AAlien_BreakOutBossOne::StaticClass())) {
 		UE_LOG(LogTemp, Warning, TEXT("Player hit boss!"));
 
-		((AAlien_BreakOutBossOne*)OtherActor)->hitByPlayer(0.75f);
+		((AAlien_BreakOutBossOne*)OtherActor)->hitByPlayer(0.075f);
 		this->Destroy();
 	}
 

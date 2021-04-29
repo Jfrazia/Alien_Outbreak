@@ -7,15 +7,10 @@
 
 #include "BossHPWidget.h"
 
-#include "RockProjectileActor.h"
-
 #include <Runtime/Engine/Classes/Kismet/GameplayStatics.h>
 
 
 
-
-int rockLeft = 0;
-ARockProjectileActor* rocks[3];
 
 // Sets default values
 AAlien_BreakOutBossOne::AAlien_BreakOutBossOne()
@@ -30,10 +25,12 @@ AAlien_BreakOutBossOne::AAlien_BreakOutBossOne()
 	attackCoolDown = 2;
 	teleportCoolDown = 15;
 
+	rockLeft = 0;
+	maxNumRock = 12;
 
-	//teleportLocation.Add(FVector(-60.0, 250.0, 1802.0));
-	//teleportLocation.Add(FVector(-60.0, -1340.0, 490.0));
-	//teleportLocation.Add(FVector(-60.0, 490.0, 300.0));
+	teleportLocation.Add(FVector(-60.0, -1170.0, 2668.0));
+	teleportLocation.Add(FVector(-60.0, -1710.0, 1938.0));
+	teleportLocation.Add(FVector(-60.0, -1570.0, 3708.0));
 
 }
 
@@ -46,9 +43,63 @@ void AAlien_BreakOutBossOne::SetupPlayerInputComponent(UInputComponent* PlayerIn
 void AAlien_BreakOutBossOne::BeginPlay()
 {
 	Super::BeginPlay();
-	//auto Widget = CreateWidget<UBossHPWidget>(GetWorld(), WidgetClass);
-	//Widget->Boss = this;
-	//Widget->AddToViewport();
+
+	GetWorld()->GetTimerManager().SetTimer(TeleportTimerHandle, this, &AAlien_BreakOutBossOne::Teleport, teleportCoolDown, false);
+	Summon();
+	GetWorld()->GetTimerManager().SetTimer(AttackTimerHandle, this, &AAlien_BreakOutBossOne::Attack, attackCoolDown, false);
+}
+
+void AAlien_BreakOutBossOne::Teleport() {
+	int rand = FMath::RandRange(0, 2);
+	FVector teleportLoc = teleportLocation[rand];
+	while (this->GetActorLocation().Equals(teleportLoc)) {
+		rand = FMath::RandRange(0, 2);
+		teleportLoc = teleportLocation[rand];
+	}
+	SetActorLocation(teleportLocation[rand]);
+	GetWorld()->GetTimerManager().SetTimer(TeleportTimerHandle, this, &AAlien_BreakOutBossOne::Teleport, teleportCoolDown, false);
+}
+
+void AAlien_BreakOutBossOne::Summon() {
+	if (rockLeft <= maxNumRock - 3) {
+		FVector loc = GetActorLocation();
+
+		// Prevent overlap at spawn
+		loc.X += 200;
+		rocks.Add(GetWorld()->SpawnActor<ARockProjectileActor>(loc, GetActorRotation()));
+		loc.X += 200;
+		rocks.Add(GetWorld()->SpawnActor<ARockProjectileActor>(loc, GetActorRotation()));
+		loc.X += 200;
+		rocks.Add(GetWorld()->SpawnActor<ARockProjectileActor>(loc, GetActorRotation()));
+
+		rocks[rockLeft]->axis = FVector(0, 0.5, 0.5);
+		rocks[rockLeft]->angleAxis = 180.f;
+		rocks[rockLeft]->rotateSpeed = 80.f;
+		rocks[rockLeft]->dimention = FVector(330, 0, 0);
+
+		rocks[rockLeft + 1]->axis = FVector(0, -0.5, 0.5);
+		rocks[rockLeft + 1]->angleAxis = 90.f;
+		rocks[rockLeft + 1]->rotateSpeed = 80.f;
+		rocks[rockLeft + 1]->dimention = FVector(240, 0, 0);
+
+		rocks[rockLeft + 2]->axis = FVector(0, 0, 1);
+		rocks[rockLeft + 2]->angleAxis = -90.f;
+		rocks[rockLeft + 2]->rotateSpeed = 80.f;
+		rocks[rockLeft + 2]->dimention = FVector(180, 0, 0);
+
+		rockLeft += 3;
+	}
+	GetWorld()->GetTimerManager().SetTimer(SummonTimerHandle, this, &AAlien_BreakOutBossOne::Summon, summonCoolDown, false);
+}
+
+void AAlien_BreakOutBossOne::Attack() {
+	if (rockLeft != 0) {
+		int rand = FMath::RandRange(0, rockLeft - 1);
+		rocks[rand]->readyFire();
+		rocks.RemoveAt(rand);
+		rockLeft--;
+	}
+	GetWorld()->GetTimerManager().SetTimer(AttackTimerHandle, this, &AAlien_BreakOutBossOne::Attack, attackCoolDown, false);
 }
 
 // Called every frame
@@ -56,22 +107,11 @@ void AAlien_BreakOutBossOne::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	if (((timeTick % (summonCoolDown * fps)) == 0)) {
-		SetFSMState(GameStates::SUMMON);
-	}
-	else if ((timeTick % (attackCoolDown * fps)) == 0 && rockLeft != 0) {
-		SetFSMState(GameStates::ATTACK);
-	}
-	else if (((timeTick % (teleportCoolDown * fps)) == 0)) {
-		//SetFSMState(GameStates::TELEPORT);
-	}
-	else {
-		SetFSMState(GameStates::IDLE);
-	}
+	//SetFSMState(GameStates::IDLE);
 
-	timeTick++;
+	//timeTick++;
 
-	FSMUpdate();
+	//FSMUpdate();
 }
 
 void AAlien_BreakOutBossOne::FSMUpdate()
