@@ -114,13 +114,13 @@ private:
 	int dashCount;
 	bool dashToRight;
 
-	enum GameStates { IDLE, MOVE, JUMP, DASH, ATTACK, HURT, DEATH };
+	enum GameStates { IDLE, MOVE, JUMP, DASH, ATTACK, HURT, DEATH, GRAB };
 	GameStates State = GameStates::IDLE;
 
 	enum GameEvents { ON_ENTER, ON_UPDATE };
 	GameEvents Event = GameEvents::ON_ENTER;
 
-	void FSMUpdate();
+	void FSMUpdate(GameStates nState);
 	void SetFSMState(GameStates newState);
 
 	void Idle_Enter();
@@ -150,5 +150,9 @@ private:
 	void Death_Enter();
 	void Death_Update();
 	void Death_Exit();
+
+	void Grab_Enter();
+	void Grab_Update();
+	void Grab_Exit();
 };
 

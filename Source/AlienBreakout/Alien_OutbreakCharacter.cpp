@@ -8,6 +8,7 @@
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/InputComponent.h"
+#include "Components/SkeletalMeshComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "PlayerHPWidget.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -70,15 +71,17 @@ AAlien_OutbreakCharacter::AAlien_OutbreakCharacter()
 	static ConstructorHelpers::FObjectFinder<USoundWave> Hurt5(TEXT("SoundWave'/Game/Sounds/Hurt5'"));
 	HurtSound5 = Hurt5.Object;
 
-	AttackCD = 0.5;
+	AttackCD = 253999999999.75f;
 	Attacking = false;
-	DashCD = 1.0;
+	DashCD = 1.0f;
 	Dashing = false;
 	DashCDing = false;
 	dashTime = 0.15;
 	dashSpeed = 50.f;
 	AvoidTime = 0.15;
 	Avoiding = false;
+
+
 }
 
 void AAlien_OutbreakCharacter::BeginPlay()
@@ -132,6 +135,7 @@ void AAlien_OutbreakCharacter::SetupPlayerInputComponent(class UInputComponent* 
 
 void AAlien_OutbreakCharacter::MoveRight(float Value)
 {
+	FSMUpdate(MOVE);
 	// add movement in that direction
 	AddMovementInput(FVector(0.f, -1.f, 0.f), Value);
 	if (Value < 0)
@@ -158,8 +162,9 @@ void AAlien_OutbreakCharacter::PlayerHP_Setter(float new_HP) {
 void AAlien_OutbreakCharacter::onRockHit(float minsHP, float rockY) {
 	// Reduce player hp on hit
 	this->HP -= minsHP;
+	FSMUpdate(HURT);
 	if (HP <= 0.f) {
-		UGameplayStatics::OpenLevel(GetWorld(), "End");
+		FSMUpdate(DEATH);
 		// Player Death
 	}
 
@@ -190,6 +195,7 @@ void AAlien_OutbreakCharacter::playHurtSound(int num) {
 
 void AAlien_OutbreakCharacter::AirDash()
 {
+	FSMUpdate(DASH);
 	if (DashCDing || knockingBack)
 		return;
 	Avoiding = true;
@@ -197,7 +203,7 @@ void AAlien_OutbreakCharacter::AirDash()
 	Dashing = true;
 	dashToRight = facingRight;
 	dashCount = dashTime * fps;
-	
+
 	GetWorld()->GetTimerManager().SetTimer(AirDashCDTimerHandle, this, &AAlien_OutbreakCharacter::AirDashCD, DashCD, false);
 	GetWorld()->GetTimerManager().SetTimer(AirDashingTimerHandle, this, &AAlien_OutbreakCharacter::AirDashStop, dashTime, false);
 	GetWorld()->GetTimerManager().SetTimer(AvoidTimerHandle, this, &AAlien_OutbreakCharacter::AvoidStop, AvoidTime, false);
@@ -215,41 +221,43 @@ void AAlien_OutbreakCharacter::AirDashCD()
 void AAlien_OutbreakCharacter::AirDashStop()
 {
 	Dashing = false;
+	SetFSMState(DASH);
+
 }
 
 void AAlien_OutbreakCharacter::PAttack()
 {
+	Attacking = true;
 	//Creates the sphere infront of the player. 
 	//can use facing right to make it face the right way.
 	//When it collides with the boss, it'll do damage.
 	//I have to make a timer, that starts when created and deletes after it is gone.
-	if (Attacking)
-		return;
-	Attacking = true;
+	if (Attacking) 
+		FSMUpdate(ATTACK);
+
 	FVector loc = GetActorLocation();
 	if (facingRight)
 		loc.Y += -70.f;
 
 	APAttackHitbox* a = GetWorld()->SpawnActor<APAttackHitbox>(loc, GetActorRotation());
 	GetWorld()->GetTimerManager().SetTimer(PAttackTimerHandle, this, &AAlien_OutbreakCharacter::PAttackStop, AttackCD, false);
-
-
-
 }
 
 void AAlien_OutbreakCharacter::PAttackStop()
 {
 
 	Attacking = false;
+	SetFSMState(ATTACK);
+
 }
 
 /// 
 /// State Machine
 /// 
-void AAlien_OutbreakCharacter::FSMUpdate()
+void AAlien_OutbreakCharacter::FSMUpdate(GameStates nState)
 {
 	// List all expected states and call relevant state functions
-	if (State == GameStates::IDLE)
+	if (nState == GameStates::IDLE)
 	{
 		if (Event == GameEvents::ON_ENTER) {
 			Idle_Enter();
@@ -259,7 +267,7 @@ void AAlien_OutbreakCharacter::FSMUpdate()
 		}
 	}
 
-	if (State == GameStates::MOVE)
+	if (nState == GameStates::MOVE)
 	{
 		if (Event == GameEvents::ON_ENTER) {
 			Move_Enter();
@@ -269,7 +277,7 @@ void AAlien_OutbreakCharacter::FSMUpdate()
 		}
 	}
 
-	if (State == GameStates::JUMP)
+	if (nState == GameStates::JUMP)
 	{
 		if (Event == GameEvents::ON_ENTER) {
 			Jump_Enter();
@@ -279,7 +287,7 @@ void AAlien_OutbreakCharacter::FSMUpdate()
 		}
 	}
 
-	if (State == GameStates::DASH)
+	if (nState == GameStates::DASH)
 	{
 		if (Event == GameEvents::ON_ENTER) {
 			Dash_Enter();
@@ -289,7 +297,7 @@ void AAlien_OutbreakCharacter::FSMUpdate()
 		}
 	}
 
-	if (State == GameStates::ATTACK)
+	if (nState == GameStates::ATTACK)
 	{
 		if (Event == GameEvents::ON_ENTER) {
 			Attack_Enter();
@@ -299,7 +307,7 @@ void AAlien_OutbreakCharacter::FSMUpdate()
 		}
 	}
 
-	if (State == GameStates::HURT)
+	if (nState == GameStates::HURT)
 	{
 		if (Event == GameEvents::ON_ENTER) {
 			Hurt_Enter();
@@ -309,13 +317,23 @@ void AAlien_OutbreakCharacter::FSMUpdate()
 		}
 	}
 
-	if (State == GameStates::DEATH)
+	if (nState == GameStates::DEATH)
 	{
 		if (Event == GameEvents::ON_ENTER) {
 			Death_Enter();
 		}
 		if (Event == GameEvents::ON_UPDATE) {
 			Death_Update();
+		}
+	}
+
+	if (nState == GameStates::GRAB)
+	{
+		if (Event == GameEvents::ON_ENTER) {
+			Grab_Enter();
+		}
+		if (Event == GameEvents::ON_UPDATE) {
+			Grab_Update();
 		}
 	}
 
@@ -348,6 +366,9 @@ void AAlien_OutbreakCharacter::SetFSMState(GameStates newState)
 	case GameStates::DEATH:
 		Death_Exit();
 		break;
+	case GameStates::GRAB:
+		Grab_Exit();
+		break;
 	default:
 		return;
 	}
@@ -359,12 +380,16 @@ void AAlien_OutbreakCharacter::SetFSMState(GameStates newState)
 
 void AAlien_OutbreakCharacter::Idle_Enter()
 {
+
+
 	// Change to GameEvents to Update when called
 	Event = GameEvents::ON_UPDATE;
 }
 
 void AAlien_OutbreakCharacter::Idle_Update()
 {
+	UE_LOG(LogTemp, Warning, TEXT("fdsfd"));
+
 	// Called once a frame when in the IDLE GameStates state
 	// Implement functionality for Idle...
 }
@@ -400,6 +425,8 @@ void AAlien_OutbreakCharacter::Jump_Update()
 {
 	// Called once a frame when in the IDLE GameStates state
 	// Implement functionality for Idle...
+	UE_LOG(LogTemp, Warning, TEXT("SAW"));
+
 }
 
 void AAlien_OutbreakCharacter::Jump_Exit()
@@ -417,28 +444,47 @@ void AAlien_OutbreakCharacter::Dash_Update()
 {
 	// Called once a frame when in the RETREAT GameStates state
 	// Implement functionality for Retreat...
+	UE_LOG(LogTemp, Warning, TEXT("Stink"));
+
 }
 
 void AAlien_OutbreakCharacter::Dash_Exit()
 {
 	// Implement any functionality for leaving the Retreat state
+	UE_LOG(LogTemp, Warning, TEXT("Stink"));
+	FSMUpdate(IDLE);
+
+
 }
 
 void AAlien_OutbreakCharacter::Attack_Enter()
 {
 	// Change to GameEvents to Update when called
 	Event = GameEvents::ON_UPDATE;
+	//Turn the Gun the right opacity
+
+
+
 }
 
 void AAlien_OutbreakCharacter::Attack_Update()
 {
 	// Called once a frame when in the RETREAT GameStates state
 	// Implement functionality for Retreat...
+	UE_LOG(LogTemp, Warning, TEXT("Teste"));
 }
 
 void AAlien_OutbreakCharacter::Attack_Exit()
 {
+
+	//Hide the gun
+	// 
+	// 
 	// Implement any functionality for leaving the Retreat state
+	UE_LOG(LogTemp, Warning, TEXT("Bye Bye"));
+	FSMUpdate(IDLE);
+
+
 }
 
 void AAlien_OutbreakCharacter::Hurt_Enter()
@@ -460,6 +506,7 @@ void AAlien_OutbreakCharacter::Hurt_Exit()
 
 void AAlien_OutbreakCharacter::Death_Enter()
 {
+
 	// Change to GameEvents to Update when called
 	Event = GameEvents::ON_UPDATE;
 }
@@ -468,9 +515,27 @@ void AAlien_OutbreakCharacter::Death_Update()
 {
 	// Called once a frame when in the RETREAT GameStates state
 	// Implement functionality for Retreat...
+	UGameplayStatics::OpenLevel(GetWorld(), "End");
 }
 
 void AAlien_OutbreakCharacter::Death_Exit()
+{
+	// Implement any functionality for leaving the Retreat state
+}
+
+void AAlien_OutbreakCharacter::Grab_Enter()
+{
+	// Change to GameEvents to Update when called
+	Event = GameEvents::ON_UPDATE;
+}
+
+void AAlien_OutbreakCharacter::Grab_Update()
+{
+	// Called once a frame when in the RETREAT GameStates state
+	// Implement functionality for Retreat...
+}
+
+void AAlien_OutbreakCharacter::Grab_Exit()
 {
 	// Implement any functionality for leaving the Retreat state
 }
