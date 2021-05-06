@@ -41,7 +41,7 @@ AAlien_OutbreakCharacter::AAlien_OutbreakCharacter()
 
 	// Configure character movement
 	GetCharacterMovement()->bOrientRotationToMovement = true; // Face in the direction we are moving..
-	GetCharacterMovement()->RotationRate = FRotator(0.0f, 720.0f, 0.0f); // ...at this rotation rate
+	GetCharacterMovement()->RotationRate = FRotator(0.0f, 1500.0f, 0.0f); // ...at this rotation rate
 	GetCharacterMovement()->GravityScale = 2.5f;
 	GetCharacterMovement()->AirControl = 0.80f;
 	GetCharacterMovement()->JumpZVelocity = 1000.f * 1.6;
@@ -187,6 +187,7 @@ void AAlien_OutbreakCharacter::beingHit(float minsHP, float rockY) {
 	knockBackCount = knockBackTime * fps;
 
 	Invincible = true;
+	//this->SetActorEnableCollision(false);
 	GetWorld()->GetTimerManager().SetTimer(InvincibleTimerHandle, this, &AAlien_OutbreakCharacter::InvincibleStop, invincibleTime, false);
 }
 
@@ -215,16 +216,20 @@ void AAlien_OutbreakCharacter::AirDash()
 
 	GetWorld()->GetTimerManager().SetTimer(AirDashCDTimerHandle, this, &AAlien_OutbreakCharacter::AirDashCD, DashCD, false);
 	GetWorld()->GetTimerManager().SetTimer(AirDashingTimerHandle, this, &AAlien_OutbreakCharacter::AirDashStop, dashTime, false);
+
+	//this->SetActorEnableCollision(false);
 	GetWorld()->GetTimerManager().SetTimer(AvoidTimerHandle, this, &AAlien_OutbreakCharacter::AvoidStop, AvoidTime, false);
 }
 
 void AAlien_OutbreakCharacter::InvincibleStop()
 {
+	//this->SetActorEnableCollision(true);
 	Invincible = false;
 }
 
 void AAlien_OutbreakCharacter::AvoidStop()
 {
+	//this->SetActorEnableCollision(true);
 	Avoiding = false;
 }
 
