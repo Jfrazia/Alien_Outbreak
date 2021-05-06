@@ -49,25 +49,19 @@ ARockProjectileActor::ARockProjectileActor()
 
 void ARockProjectileActor::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult) {
 	if (OtherActor->IsA(AAlien_OutbreakCharacter::StaticClass())) {
-		UE_LOG(LogTemp, Warning, TEXT("HIT Player!"));
 
 		float rockY = this->GetActorLocation().Y;
-		if (!((AAlien_OutbreakCharacter*)GetWorld()->GetFirstPlayerController()->GetPawn())->Avoiding) {
-			((AAlien_OutbreakCharacter*)GetWorld()->GetFirstPlayerController()->GetPawn())->onRockHit(0.04f, rockY);
+		AAlien_OutbreakCharacter* player = (AAlien_OutbreakCharacter*)GetWorld()->GetFirstPlayerController()->GetPawn();
+		if (!player->Avoiding && !player->Invincible) {
+			((AAlien_OutbreakCharacter*)GetWorld()->GetFirstPlayerController()->GetPawn())->beingHit(0.04f, rockY);
 			this->Destroy();
 		}
-		else if (OtherActor->IsA(AAlien_BreakOutBossOne::StaticClass()) || OtherActor->IsA(ARockProjectileActor::StaticClass())) {
-			UE_LOG(LogTemp, Warning, TEXT("HIT Rock or Boss!"));
-			// Ignore collision with rock or boss
-		}
-		else if (OtherActor->IsA(APAttackHitbox::StaticClass())) {
-			UE_LOG(LogTemp, Warning, TEXT("HIT Player Bullet!"));
-			GetWorld()->DestroyActor(OtherActor);
-			this->Destroy();
-		}
-
-		//GC
-		//GetWorld()->ForceGarbageCollection(true);
+	}
+	else if (OtherActor->IsA(AAlien_BreakOutBossOne::StaticClass()) || OtherActor->IsA(ARockProjectileActor::StaticClass())) {
+	}
+	else if (OtherActor->IsA(APAttackHitbox::StaticClass())) {
+		GetWorld()->DestroyActor(OtherActor);
+		this->Destroy();
 	}
 }
 

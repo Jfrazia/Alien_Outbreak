@@ -53,6 +53,9 @@ protected:
 
 	UFUNCTION()
 		void AvoidStop();
+
+	UFUNCTION()
+		void InvincibleStop();
 	// APawn interface
 	virtual void SetupPlayerInputComponent(class UInputComponent* InputComponent) override;
 	// End of APawn interface
@@ -62,12 +65,13 @@ protected:
 	FTimerHandle AvoidTimerHandle;
 
 	FTimerHandle PAttackTimerHandle;
+	FTimerHandle InvincibleTimerHandle;
 
 	bool facingRight = true;
 public:
 	AAlien_OutbreakCharacter();
 	void PlayerHP_Setter(float new_HP);
-	void onRockHit(float minsHP, float rockY);
+	void beingHit(float minsHP, float rockY);
 
 	/** Returns SideViewCameraComponent subobject **/
 	FORCEINLINE class UCameraComponent* GetSideViewCameraComponent() const { return SideViewCameraComponent; }
@@ -86,6 +90,7 @@ public:
 	UPROPERTY()
 		TSubclassOf<class UPlayerHPWidget> WidgetClass;
 	bool Avoiding;
+	bool Invincible;
 
 private:
 	USoundWave* HurtSound1;
@@ -113,6 +118,8 @@ private:
 	float dashSpeed;
 	int dashCount;
 	bool dashToRight;
+
+	float invincibleTime;
 
 	enum GameStates { IDLE, MOVE, JUMP, DASH, ATTACK, HURT, DEATH, GRAB };
 	GameStates State = GameStates::IDLE;

@@ -81,7 +81,8 @@ AAlien_OutbreakCharacter::AAlien_OutbreakCharacter()
 	AvoidTime = 0.15;
 	Avoiding = false;
 
-
+	invincibleTime = 0.5;
+	Invincible = false;
 }
 
 void AAlien_OutbreakCharacter::BeginPlay()
@@ -96,12 +97,17 @@ void AAlien_OutbreakCharacter::BeginPlay()
 void AAlien_OutbreakCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+	FVector playerLoc = GetActorLocation();
+	if (playerLoc.X != -60.0) {
+		playerLoc.X = -60.0;
+		SetActorLocation(playerLoc);
+	}
 
 	if (knockingBack) {
 		if (knockToLeft)
-			SetActorLocation(GetActorLocation() + FVector(0, 1, 0) * knockBackSpeed);
+			SetActorLocation(playerLoc + FVector(0, 1, 0) * knockBackSpeed);
 		else
-			SetActorLocation(GetActorLocation() + FVector(0, -1, 0) * knockBackSpeed);
+			SetActorLocation(playerLoc + FVector(0, -1, 0) * knockBackSpeed);
 		knockBackCount--;
 		if (knockBackCount <= 0)
 			knockingBack = false;
@@ -109,9 +115,9 @@ void AAlien_OutbreakCharacter::Tick(float DeltaTime)
 
 	if (Dashing) {
 		if (dashToRight)
-			SetActorLocation(GetActorLocation() + FVector(0, -1, 0) * dashSpeed);
+			SetActorLocation(playerLoc + FVector(0, -1, 0) * dashSpeed);
 		else
-			SetActorLocation(GetActorLocation() + FVector(0, 1, 0) * dashSpeed);
+			SetActorLocation(playerLoc + FVector(0, 1, 0) * dashSpeed);
 	}
 	//HP -= 0.0001f;
 }
@@ -159,7 +165,7 @@ void AAlien_OutbreakCharacter::PlayerHP_Setter(float new_HP) {
 	HP = new_HP;
 }
 
-void AAlien_OutbreakCharacter::onRockHit(float minsHP, float rockY) {
+void AAlien_OutbreakCharacter::beingHit(float minsHP, float rockY) {
 	// Reduce player hp on hit
 	this->HP -= minsHP;
 	FSMUpdate(HURT);
@@ -179,6 +185,9 @@ void AAlien_OutbreakCharacter::onRockHit(float minsHP, float rockY) {
 		knockToLeft = false;
 	knockingBack = true;
 	knockBackCount = knockBackTime * fps;
+
+	Invincible = true;
+	GetWorld()->GetTimerManager().SetTimer(InvincibleTimerHandle, this, &AAlien_OutbreakCharacter::InvincibleStop, invincibleTime, false);
 }
 
 void AAlien_OutbreakCharacter::playHurtSound(int num) {
@@ -208,6 +217,12 @@ void AAlien_OutbreakCharacter::AirDash()
 	GetWorld()->GetTimerManager().SetTimer(AirDashingTimerHandle, this, &AAlien_OutbreakCharacter::AirDashStop, dashTime, false);
 	GetWorld()->GetTimerManager().SetTimer(AvoidTimerHandle, this, &AAlien_OutbreakCharacter::AvoidStop, AvoidTime, false);
 }
+
+void AAlien_OutbreakCharacter::InvincibleStop()
+{
+	Invincible = false;
+}
+
 void AAlien_OutbreakCharacter::AvoidStop()
 {
 	Avoiding = false;

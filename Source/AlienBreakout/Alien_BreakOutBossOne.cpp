@@ -7,6 +7,8 @@
 
 #include "BossHPWidget.h"
 
+#include "Alien_OutbreakCharacter.h"
+
 #include <Runtime/Engine/Classes/Kismet/GameplayStatics.h>
 
 
@@ -23,15 +25,32 @@ AAlien_BreakOutBossOne::AAlien_BreakOutBossOne()
 
 	summonCoolDown = 5;
 	attackCoolDown = 2;
-	teleportCoolDown = 15;
+	teleportCoolDown = 5;
 
 	rockLeft = 0;
 	maxNumRock = 12;
 
-	teleportLocation.Add(FVector(-60.0, -1170.0, 2668.0));
-	teleportLocation.Add(FVector(-60.0, -1710.0, 1938.0));
-	teleportLocation.Add(FVector(-60.0, -1570.0, 3708.0));
+	teleportLocation.Add(FVector(-60.0, -1630.0, 1938.0));
+	teleportLocation.Add(FVector(-60.0, -1110.0, 2548.0));
+	teleportLocation.Add(FVector(-60.0, -1630.0, 3038.0));
+	teleportLocation.Add(FVector(-60.0, -1360.0, 3718.0));
 
+	teleportLocation.Add(FVector(-60.0, 1790.0, 1938.0));
+	teleportLocation.Add(FVector(-60.0, 1950.0, 3068.0));
+	teleportLocation.Add(FVector(-60.0, 1920.0, 3818.0));
+	//teleportLocation.Add(FVector(-60.0, 0.0, 2700.0));
+
+	facingLeft = true;
+
+	rushAttackCoolDown = 9;
+	rushAttackWaitTime = 1;
+	rushAttackDuration = 2.5;
+	rushAttackSpeed = 30;
+	rushAttackCD = false;
+	rushAttacking = false;
+
+	specialRushing = false;;
+	specialRushStage = 0;
 }
 
 void AAlien_BreakOutBossOne::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -50,17 +69,87 @@ void AAlien_BreakOutBossOne::BeginPlay()
 }
 
 void AAlien_BreakOutBossOne::Teleport() {
-	int rand = FMath::RandRange(0, 2);
-	FVector teleportLoc = teleportLocation[rand];
-	while (this->GetActorLocation().Equals(teleportLoc)) {
-		rand = FMath::RandRange(0, 2);
-		teleportLoc = teleportLocation[rand];
+	if (specialRushing || rushAttacking) {
+		GetWorld()->GetTimerManager().SetTimer(TeleportTimerHandle, this, &AAlien_BreakOutBossOne::Teleport, teleportCoolDown, false);
+		return;
 	}
-	SetActorLocation(teleportLocation[rand]);
+
+	int index = 0;
+	int i = 0;
+	int previousDiff = 10000;
+	FVector playerLoc = GetWorld()->GetFirstPlayerController()->GetPawn()->GetActorLocation();
+	for (FVector teleLoc : teleportLocation) {
+		int newDiff = sqrt(pow(playerLoc.Y - teleLoc.Y, 2) + pow(playerLoc.Z - teleLoc.Z, 2) * 2);
+		//int newDiff = abs(playerLoc.Z - teleLoc.Z);
+		if (newDiff < previousDiff) {
+			index = i;
+			previousDiff = newDiff;
+		}
+		i++;
+	}
+
+	if(!GetActorLocation().Equals(teleportLocation[index]))
+		TeleportTo(index);
+
 	GetWorld()->GetTimerManager().SetTimer(TeleportTimerHandle, this, &AAlien_BreakOutBossOne::Teleport, teleportCoolDown, false);
+
+	// 25% Special Rush, 75% Normal Rush
+	if (!rushAttackCD) {
+		int rand = FMath::RandRange(1, 100);
+		//rand = 100;
+		if (rand > 75) 
+			GetWorld()->GetTimerManager().SetTimer(RushAttackWaitTimerHandle, this, &AAlien_BreakOutBossOne::SpecialRush, rushAttackWaitTime, false);
+		else
+			GetWorld()->GetTimerManager().SetTimer(RushAttackWaitTimerHandle, this, &AAlien_BreakOutBossOne::RushAttack, rushAttackWaitTime, false);
+	}
+}
+
+void AAlien_BreakOutBossOne::TeleportTo(int index) {
+	SetActorLocation(teleportLocation[index]);
+	if (teleportLocation[index].Y > 0) {
+		if (facingLeft) {
+			SetActorRotation(FRotator(0.0, 180.0, 0.0), ETeleportType::None);
+		}
+		facingLeft = false;
+	}
+	else {
+		if (!facingLeft)
+			SetActorRotation(FRotator(0.0, 0.0, 0.0), ETeleportType::None);
+		facingLeft = true;
+	}
+}
+
+void AAlien_BreakOutBossOne::RushAttack() {
+	rushAttackCD = true;
+	rushAttacking = true;
+	timeTick = 0;
+
+	GetWorld()->GetTimerManager().SetTimer(RushAttackTimerHandle, this, &AAlien_BreakOutBossOne::RushAttackDone, rushAttackCoolDown, false);
+}
+
+void AAlien_BreakOutBossOne::SpecialRush() {
+	rushAttackCD = true;
+	specialRushing = true;
+	timeTick = 0;
+
+	switch (specialRushStage) {
+	case 0: TeleportTo(4); specialRushStage++; break;
+	case 1: TeleportTo(1); specialRushStage++; break;
+	case 2: TeleportTo(5); specialRushStage++; break;
+	case 3: GetWorld()->GetTimerManager().SetTimer(RushAttackTimerHandle, this, &AAlien_BreakOutBossOne::RushAttackDone, rushAttackCoolDown, false);
+		specialRushing = false; specialRushStage = 0; Teleport(); break;
+	}
+}
+
+void AAlien_BreakOutBossOne::RushAttackDone() {
+	rushAttackCD = false;
 }
 
 void AAlien_BreakOutBossOne::Summon() {
+	if (specialRushing || rushAttacking) {
+		GetWorld()->GetTimerManager().SetTimer(SummonTimerHandle, this, &AAlien_BreakOutBossOne::Summon, summonCoolDown, false);
+		return;
+	}
 	if (rockLeft <= maxNumRock - 3) {
 		FVector loc = GetActorLocation();
 
@@ -93,6 +182,10 @@ void AAlien_BreakOutBossOne::Summon() {
 }
 
 void AAlien_BreakOutBossOne::Attack() {
+	if (specialRushing || rushAttacking) {
+		GetWorld()->GetTimerManager().SetTimer(AttackTimerHandle, this, &AAlien_BreakOutBossOne::Attack, attackCoolDown, false);
+		return;
+	}
 	if (rockLeft != 0) {
 		int rand = FMath::RandRange(0, rockLeft - 1);
 		rocks[rand]->readyFire();
@@ -107,168 +200,23 @@ void AAlien_BreakOutBossOne::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	//SetFSMState(GameStates::IDLE);
-
-	//timeTick++;
-
-	//FSMUpdate();
-}
-
-void AAlien_BreakOutBossOne::FSMUpdate()
-{
-	// List all expected states and call relevant state functions
-	if (State == GameStates::IDLE)
-	{
-		if (Event == GameEvents::ON_ENTER) {
-			Idle_Enter();
-		}
-		if (Event == GameEvents::ON_UPDATE) {
-			Idle_Update();
+	// Rushing
+	if (rushAttacking || specialRushing) {
+		if (facingLeft)
+			SetActorLocation(GetActorLocation() + FVector(0.0, rushAttackSpeed, 0.0));
+		else
+			SetActorLocation(GetActorLocation() + FVector(0.0, -rushAttackSpeed, 0.0));
+		timeTick++;
+		if (timeTick > fps * rushAttackDuration) {
+			if (rushAttacking) {
+				rushAttacking = false;
+				Teleport();
+			}
+			else if (specialRushing) {
+				SpecialRush();
+			}
 		}
 	}
-
-	if (State == GameStates::SUMMON)
-	{
-		if (Event == GameEvents::ON_ENTER) {
-			Summon_Enter();
-		}
-		if (Event == GameEvents::ON_UPDATE) {
-			Summon_Update();
-		}
-	}
-	if (State == GameStates::ATTACK)
-	{
-		if (Event == GameEvents::ON_ENTER) {
-			Attack_Enter();
-		}
-		if (Event == GameEvents::ON_UPDATE) {
-			Attack_Update();
-		}
-	}
-	if (State == GameStates::TELEPORT)
-	{
-		if (Event == GameEvents::ON_ENTER) {
-			Teleport_Enter();
-		}
-		if (Event == GameEvents::ON_UPDATE) {
-			Teleport_Update();
-		}
-	}
-
-	// Append any GameStates you add to this example..
-}
-
-void AAlien_BreakOutBossOne::SetFSMState(GameStates newState)
-{
-	// Append any GameStates you add to this example to this switch statement...
-	switch (State)
-	{
-	case GameStates::IDLE:
-		Idle_Exit();
-		break;
-	case GameStates::SUMMON:
-		Summon_Exit();
-		break;
-	case GameStates::ATTACK:
-		Attack_Exit();
-		break;
-	case GameStates::TELEPORT:
-		Teleport_Exit();
-		break;
-	default:
-		UE_LOG(LogTemp, Error, TEXT("Unexpected state has not been implemented!"), newState);
-		return;
-	}
-
-	// Set new GameStates state and begin OnEnter of that state
-	State = newState;
-	Event = GameEvents::ON_ENTER;
-}
-
-void AAlien_BreakOutBossOne::Idle_Enter()
-{
-	Event = GameEvents::ON_UPDATE;
-}
-
-void AAlien_BreakOutBossOne::Idle_Update()
-{
-}
-
-void AAlien_BreakOutBossOne::Idle_Exit()
-{
-}
-
-void AAlien_BreakOutBossOne::Summon_Enter()
-{
-	Event = GameEvents::ON_UPDATE;
-
-	rockLeft = 3;
-
-	FVector loc = GetActorLocation();
-
-	// Prevent overlap at spawn
-	loc.X += 200;
-	rocks[0] = GetWorld()->SpawnActor<ARockProjectileActor>(loc, GetActorRotation());
-	loc.X += 200;
-	rocks[1] = GetWorld()->SpawnActor<ARockProjectileActor>(loc, GetActorRotation());
-	loc.X += 200;
-	rocks[2] = GetWorld()->SpawnActor<ARockProjectileActor>(loc, GetActorRotation());
-
-	rocks[0]->axis = FVector(0, 0.5, 0.5);
-	rocks[0]->angleAxis = 180.f;
-	rocks[0]->rotateSpeed = 80.f;
-	rocks[0]->dimention = FVector(330, 0, 0);
-
-	rocks[1]->axis = FVector(0, -0.5, 0.5);
-	rocks[1]->angleAxis = 90.f;
-	rocks[1]->rotateSpeed = 80.f;
-	rocks[1]->dimention = FVector(240, 0, 0);
-
-	rocks[2]->axis = FVector(0, 0, 1);
-	rocks[2]->angleAxis = -90.f;
-	rocks[2]->rotateSpeed = 80.f;
-	rocks[2]->dimention = FVector(180, 0, 0);
-}
-
-void AAlien_BreakOutBossOne::Summon_Update()
-{
-
-}
-
-void AAlien_BreakOutBossOne::Summon_Exit()
-{
-}
-
-void AAlien_BreakOutBossOne::Attack_Enter()
-{
-	Event = GameEvents::ON_UPDATE;
-
-	rocks[rockLeft - 1]->readyFire();
-	//rocks[rockLeft - 1] = NULL;
-}
-
-void AAlien_BreakOutBossOne::Attack_Update()
-{
-}
-
-void AAlien_BreakOutBossOne::Attack_Exit()
-{
-	rockLeft--;
-}
-
-void AAlien_BreakOutBossOne::Teleport_Enter()
-{
-	Event = GameEvents::ON_UPDATE;
-	int rand = FMath::RandRange(0, 2);
-	SetActorLocation(teleportLocation[rand]);
-}
-
-void AAlien_BreakOutBossOne::Teleport_Update()
-{
-}
-
-void AAlien_BreakOutBossOne::Teleport_Exit()
-{
 }
 
 void AAlien_BreakOutBossOne::hitByPlayer(float minsHP) {
@@ -276,5 +224,16 @@ void AAlien_BreakOutBossOne::hitByPlayer(float minsHP) {
 	if (HP <= 0.f) {
 		UGameplayStatics::OpenLevel(GetWorld(), "End");
 		// Death
+	}
+}
+
+void AAlien_BreakOutBossOne::NotifyHit(class UPrimitiveComponent* MyComp, AActor* Other, class UPrimitiveComponent* OtherComp, bool bSelfMoved, FVector HitLocation, FVector HitNormal, FVector NormalImpulse, const FHitResult& Hit) {
+	Super::NotifyHit(MyComp, Other, OtherComp, bSelfMoved, HitLocation, HitNormal, NormalImpulse, Hit);
+	//UE_LOG(LogTemp, Warning, TEXT("HIT!"));
+	if (Other->IsA(AAlien_OutbreakCharacter::StaticClass())) {
+		AAlien_OutbreakCharacter* player = (AAlien_OutbreakCharacter*)GetWorld()->GetFirstPlayerController()->GetPawn();
+		if (!player->Avoiding && !player->Invincible) {
+			player->beingHit(0.08f, GetActorLocation().Y);
+		}
 	}
 }

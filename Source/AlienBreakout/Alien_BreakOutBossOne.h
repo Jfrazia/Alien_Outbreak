@@ -25,9 +25,19 @@ protected:
 private:
 	int timeTick;
 	int fps;
-	int summonCoolDown;
-	int attackCoolDown;
-	int teleportCoolDown;
+	double summonCoolDown;
+	double attackCoolDown;
+	double teleportCoolDown;
+
+	double rushAttackCoolDown;
+	double rushAttackWaitTime;
+	double rushAttackSpeed;
+	double rushAttackDuration;
+	bool rushAttackCD;
+	bool rushAttacking;
+
+	bool specialRushing;
+	int specialRushStage;
 	
 	int maxNumRock;
 	int rockLeft;
@@ -38,10 +48,18 @@ private:
 	FTimerHandle TeleportTimerHandle;
 	FTimerHandle SummonTimerHandle;
 	FTimerHandle AttackTimerHandle;
+	FTimerHandle RushAttackWaitTimerHandle;
+	FTimerHandle RushAttackTimerHandle;
 
 	void Teleport();
+	void TeleportTo(int index);
 	void Summon();
 	void Attack();
+	void RushAttack();
+	void RushAttackDone();
+	void SpecialRush();
+
+	bool facingLeft;
 
 public:
 	UPROPERTY(BlueprintReadOnly)
@@ -54,29 +72,6 @@ public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
-	enum GameStates { IDLE, SUMMON, ATTACK, TELEPORT };
-	GameStates State = GameStates::IDLE;
-
-	enum GameEvents { ON_ENTER, ON_UPDATE };
-	GameEvents Event = GameEvents::ON_ENTER;
-
-	void FSMUpdate();
-	void SetFSMState(GameStates newState);
-
-	void Idle_Enter();
-	void Idle_Update();
-	void Idle_Exit();
-
-	void Summon_Enter();
-	void Summon_Update();
-	void Summon_Exit();
-
-	void Attack_Enter();
-	void Attack_Update();
-	void Attack_Exit();
-
-	void Teleport_Enter();
-	void Teleport_Update();
-	void Teleport_Exit();
-
+	virtual void NotifyHit(class UPrimitiveComponent* MyComp, AActor* Other, class UPrimitiveComponent* OtherComp, bool bSelfMoved, FVector HitLocation, FVector HitNormal, FVector NormalImpulse, const FHitResult& Hit) override;
+	
 };
