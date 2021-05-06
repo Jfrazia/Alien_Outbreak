@@ -42,14 +42,15 @@ protected:
 	
 
 	void PAttack();
+
+	void Grab();
+
 	UFUNCTION()
 		void AirDashCD();
 
 	UFUNCTION()
 		void AirDashStop();
 
-	UFUNCTION()
-		void PAttackStop();
 
 	UFUNCTION()
 		void AvoidStop();
@@ -77,6 +78,12 @@ public:
 	FORCEINLINE class UCameraComponent* GetSideViewCameraComponent() const { return SideViewCameraComponent; }
 	/** Returns CameraBoom subobject **/
 	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
+
+	UPROPERTY(BlueprintReadOnly)
+		bool Attacking;
+
+	UPROPERTY(BlueprintReadOnly)
+		bool Holding;
 
 protected:
 	// Called when the game starts or when spawned
@@ -108,20 +115,17 @@ private:
 	int knockBackCount;
 
 	float AttackCD;
-	bool Attacking;
+	
 	float DashCD;
 	bool DashCDing;
 	float AvoidTime;
 
 	bool Dashing;
-	float dashTime;
 	float dashSpeed;
-	int dashCount;
-	bool dashToRight;
 
 	float invincibleTime;
 
-	enum GameStates { IDLE, MOVE, JUMP, DASH, ATTACK, HURT, DEATH, GRAB };
+	enum GameStates { IDLE, MOVE, JUMP, DASH, ATTACK, HURT, DEATH, GRAB, THROW };
 	GameStates State = GameStates::IDLE;
 
 	enum GameEvents { ON_ENTER, ON_UPDATE };
@@ -161,5 +165,11 @@ private:
 	void Grab_Enter();
 	void Grab_Update();
 	void Grab_Exit();
+
+	void Throw_Enter();
+	void Throw_Update();
+	void Throw_Exit();
+
+
 };
 

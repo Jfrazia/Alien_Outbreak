@@ -2,8 +2,9 @@
 
 #include "Alien_OutbreakCharacter.h"
 #include "PAttackHitbox.h"
+#include "ThrownItem.h"
 
-
+#include "Components/PrimitiveComponent.h"
 
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
@@ -11,8 +12,9 @@
 #include "Components/SkeletalMeshComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "PlayerHPWidget.h"
-#include "GameFramework/CharacterMovementComponent.h"
 #include <Runtime/Engine/Classes/Kismet/GameplayStatics.h>
+#include "GameFramework/CharacterMovementComponent.h"
+
 
 
 AAlien_OutbreakCharacter::AAlien_OutbreakCharacter()
@@ -44,7 +46,7 @@ AAlien_OutbreakCharacter::AAlien_OutbreakCharacter()
 	GetCharacterMovement()->RotationRate = FRotator(0.0f, 1500.0f, 0.0f); // ...at this rotation rate
 	GetCharacterMovement()->GravityScale = 2.5f;
 	GetCharacterMovement()->AirControl = 0.80f;
-	GetCharacterMovement()->JumpZVelocity = 1000.f * 1.6;
+	GetCharacterMovement()->JumpZVelocity = 1000.f * 1.65;
 	GetCharacterMovement()->GroundFriction = 3.f;
 	GetCharacterMovement()->MaxWalkSpeed = 600.f * 1.4;
 	GetCharacterMovement()->MaxFlySpeed = 600.f;
@@ -71,18 +73,19 @@ AAlien_OutbreakCharacter::AAlien_OutbreakCharacter()
 	static ConstructorHelpers::FObjectFinder<USoundWave> Hurt5(TEXT("SoundWave'/Game/Sounds/Hurt5'"));
 	HurtSound5 = Hurt5.Object;
 
-	AttackCD = 253999999999.75f;
+	AttackCD = 1.0f;
 	Attacking = false;
 	DashCD = 1.0f;
 	Dashing = false;
 	DashCDing = false;
-	dashTime = 0.15;
-	dashSpeed = 50.f;
+	dashSpeed = 30.f;
 	AvoidTime = 0.15;
 	Avoiding = false;
 
 	invincibleTime = 0.5;
 	Invincible = false;
+
+	Holding = false;
 }
 
 void AAlien_OutbreakCharacter::BeginPlay()
@@ -114,14 +117,7 @@ void AAlien_OutbreakCharacter::Tick(float DeltaTime)
 		if (knockBackCount <= 0)
 			knockingBack = false;
 	}
-
-	if (Dashing) {
-		if (dashToRight)
-			SetActorLocation(playerLoc + FVector(0, -1, 0) * dashSpeed);
-		else
-			SetActorLocation(playerLoc + FVector(0, 1, 0) * dashSpeed);
-	}
-	//HP -= 0.0001f;
+	
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -135,6 +131,7 @@ void AAlien_OutbreakCharacter::SetupPlayerInputComponent(class UInputComponent* 
 	PlayerInputComponent->BindAxis("MoveRight", this, &AAlien_OutbreakCharacter::MoveRight);
 	PlayerInputComponent->BindAction("AirDash", IE_Pressed, this, &AAlien_OutbreakCharacter::AirDash);
 	PlayerInputComponent->BindAction("PAttack", IE_Pressed, this, &AAlien_OutbreakCharacter::PAttack);
+	PlayerInputComponent->BindAction("Grab", IE_Pressed, this, &AAlien_OutbreakCharacter::Grab);
 
 
 	PlayerInputComponent->BindTouch(IE_Pressed, this, &AAlien_OutbreakCharacter::TouchStarted);
@@ -208,19 +205,6 @@ void AAlien_OutbreakCharacter::playHurtSound(int num) {
 void AAlien_OutbreakCharacter::AirDash()
 {
 	FSMUpdate(DASH);
-	if (DashCDing || knockingBack)
-		return;
-	Avoiding = true;
-
-	Dashing = true;
-	dashToRight = facingRight;
-	dashCount = dashTime * fps;
-
-	GetWorld()->GetTimerManager().SetTimer(AirDashCDTimerHandle, this, &AAlien_OutbreakCharacter::AirDashCD, DashCD, false);
-	GetWorld()->GetTimerManager().SetTimer(AirDashingTimerHandle, this, &AAlien_OutbreakCharacter::AirDashStop, dashTime, false);
-
-	//this->SetActorEnableCollision(false);
-	GetWorld()->GetTimerManager().SetTimer(AvoidTimerHandle, this, &AAlien_OutbreakCharacter::AvoidStop, AvoidTime, false);
 }
 
 void AAlien_OutbreakCharacter::InvincibleStop()
@@ -233,45 +217,35 @@ void AAlien_OutbreakCharacter::AvoidStop()
 {
 	//this->SetActorEnableCollision(true);
 	Avoiding = false;
+	SetFSMState(DASH);
 }
 
 void AAlien_OutbreakCharacter::AirDashCD()
 {
 	DashCDing = false;
+	SetFSMState(DASH);
 }
 
 void AAlien_OutbreakCharacter::AirDashStop()
 {
-	Dashing = false;
 	SetFSMState(DASH);
-
 }
 
 void AAlien_OutbreakCharacter::PAttack()
 {
-	Attacking = true;
-	//Creates the sphere infront of the player. 
-	//can use facing right to make it face the right way.
-	//When it collides with the boss, it'll do damage.
-	//I have to make a timer, that starts when created and deletes after it is gone.
-	if (Attacking) 
+	if(!Holding)
 		FSMUpdate(ATTACK);
-
-	FVector loc = GetActorLocation();
-	if (facingRight)
-		loc.Y += -70.f;
-
-	APAttackHitbox* a = GetWorld()->SpawnActor<APAttackHitbox>(loc, GetActorRotation());
-	GetWorld()->GetTimerManager().SetTimer(PAttackTimerHandle, this, &AAlien_OutbreakCharacter::PAttackStop, AttackCD, false);
+	else
+		FSMUpdate(THROW);
 }
 
-void AAlien_OutbreakCharacter::PAttackStop()
+void AAlien_OutbreakCharacter::Grab() 
 {
-
-	Attacking = false;
-	SetFSMState(ATTACK);
+	//handles grabbing said item, and setting the character to the grab state
+	FSMUpdate(GRAB);
 
 }
+
 
 /// 
 /// State Machine
@@ -358,6 +332,15 @@ void AAlien_OutbreakCharacter::FSMUpdate(GameStates nState)
 			Grab_Update();
 		}
 	}
+	if (nState == GameStates::THROW)
+	{
+		if (Event == GameEvents::ON_ENTER) {
+			Throw_Enter();
+		}
+		if (Event == GameEvents::ON_UPDATE) {
+			Throw_Update();
+		}
+	}
 
 	// Append any GameStates you add to this example..
 }
@@ -391,6 +374,9 @@ void AAlien_OutbreakCharacter::SetFSMState(GameStates newState)
 	case GameStates::GRAB:
 		Grab_Exit();
 		break;
+	case GameStates::THROW:
+		Throw_Exit();
+		break;
 	default:
 		return;
 	}
@@ -410,7 +396,7 @@ void AAlien_OutbreakCharacter::Idle_Enter()
 
 void AAlien_OutbreakCharacter::Idle_Update()
 {
-	UE_LOG(LogTemp, Warning, TEXT("fdsfd"));
+	UE_LOG(LogTemp, Warning, TEXT("Idle_Update"));
 
 	// Called once a frame when in the IDLE GameStates state
 	// Implement functionality for Idle...
@@ -466,14 +452,33 @@ void AAlien_OutbreakCharacter::Dash_Update()
 {
 	// Called once a frame when in the RETREAT GameStates state
 	// Implement functionality for Retreat...
-	UE_LOG(LogTemp, Warning, TEXT("Stink"));
+	
+	Avoiding = true;
+
+
+	FVector playerLoc = GetActorLocation();
+	if(facingRight)
+		LaunchCharacter(FVector(0, -2000, 0), false, true);
+	else
+		LaunchCharacter(FVector(0, 2000, 0), false, true);
+
+
+	GetWorld()->GetTimerManager().SetTimer(AirDashCDTimerHandle, this, &AAlien_OutbreakCharacter::AirDashCD, DashCD, false);
+
+	//this->SetActorEnableCollision(false);
+	GetWorld()->GetTimerManager().SetTimer(AvoidTimerHandle, this, &AAlien_OutbreakCharacter::AvoidStop, AvoidTime, false);
+	UE_LOG(LogTemp, Warning, TEXT("Dash Up"));
+	SetFSMState(DASH);
+	
+
 
 }
 
 void AAlien_OutbreakCharacter::Dash_Exit()
 {
 	// Implement any functionality for leaving the Retreat state
-	UE_LOG(LogTemp, Warning, TEXT("Stink"));
+	UE_LOG(LogTemp, Warning, TEXT("Dash leave"));
+	Avoiding = false;
 	FSMUpdate(IDLE);
 
 
@@ -484,16 +489,29 @@ void AAlien_OutbreakCharacter::Attack_Enter()
 	// Change to GameEvents to Update when called
 	Event = GameEvents::ON_UPDATE;
 	//Turn the Gun the right opacity
-
-
-
 }
 
 void AAlien_OutbreakCharacter::Attack_Update()
 {
 	// Called once a frame when in the RETREAT GameStates state
 	// Implement functionality for Retreat...
-	UE_LOG(LogTemp, Warning, TEXT("Teste"));
+	FVector loc = GetActorLocation();
+	if (facingRight)
+		loc.Y += -70.f;
+	else
+		loc.Y += 70.f;
+
+	Attacking = true;
+	//Creates the sphere infront of the player. 
+	//can use facing right to make it face the right way.
+	//When it collides with the boss, it'll do damage.
+	//I have to make a timer, that starts when created and deletes after it is gone.
+
+
+	APAttackHitbox* a = GetWorld()->SpawnActor<APAttackHitbox>(loc, GetActorRotation());
+	UE_LOG(LogTemp, Warning, TEXT("Attack up"));
+	SetFSMState(ATTACK);
+
 }
 
 void AAlien_OutbreakCharacter::Attack_Exit()
@@ -503,7 +521,8 @@ void AAlien_OutbreakCharacter::Attack_Exit()
 	// 
 	// 
 	// Implement any functionality for leaving the Retreat state
-	UE_LOG(LogTemp, Warning, TEXT("Bye Bye"));
+	UE_LOG(LogTemp, Warning, TEXT("Attack Exit"));
+	Attacking = false;
 	FSMUpdate(IDLE);
 
 
@@ -555,9 +574,39 @@ void AAlien_OutbreakCharacter::Grab_Update()
 {
 	// Called once a frame when in the RETREAT GameStates state
 	// Implement functionality for Retreat...
+
+	Holding = true;
 }
 
 void AAlien_OutbreakCharacter::Grab_Exit()
 {
 	// Implement any functionality for leaving the Retreat state
+}
+
+void AAlien_OutbreakCharacter::Throw_Enter()
+{
+
+}
+
+void AAlien_OutbreakCharacter::Throw_Update()
+{
+	FVector loc = GetActorLocation();
+	if (facingRight)
+		loc.Y += -70.f;
+	else
+		loc.Y += 70.f;
+
+	Holding = false;
+	//Creates the sphere infront of the player. 
+	//can use facing right to make it face the right way.
+	//When it collides with the boss, it'll do damage.
+	//I have to make a timer, that starts when created and deletes after it is gone.
+
+
+	AThrownItem* i = GetWorld()->SpawnActor<AThrownItem>(loc, GetActorRotation());
+}
+
+void AAlien_OutbreakCharacter::Throw_Exit()
+{
+
 }
