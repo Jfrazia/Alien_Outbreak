@@ -97,6 +97,8 @@ void AAlien_OutbreakCharacter::BeginPlay()
 void AAlien_OutbreakCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+
+	// Keep player in right Axis
 	FVector playerLoc = GetActorLocation();
 	if (playerLoc.X != -60.0) {
 		playerLoc.X = -60.0;
