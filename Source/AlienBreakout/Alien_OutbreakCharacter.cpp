@@ -254,6 +254,17 @@ void AAlien_OutbreakCharacter::Pause()
 }
 
 
+
+void AAlien_OutbreakCharacter::damagePlayer(float damageTaken, float knockback) 
+{
+	((AAlien_OutbreakCharacter*)GetWorld()->GetFirstPlayerController()->GetPawn())->beingHit(damageTaken, knockback);
+}
+
+void AAlien_OutbreakCharacter::processHit()
+{
+
+}
+
 /// 
 /// State Machine
 /// 
@@ -634,7 +645,6 @@ void AAlien_OutbreakCharacter::Throw_Exit()
 
 void AAlien_OutbreakCharacter::Pause_Enter()
 {
-
 	// Change to GameEvents to Update when called
 
 }
@@ -648,6 +658,7 @@ void AAlien_OutbreakCharacter::Pause_Update()
 	}
 	else {
 		UGameplayStatics::SetGamePaused(GetWorld(), false);
+		SetFSMState(IDLE);
 	}
 
 	

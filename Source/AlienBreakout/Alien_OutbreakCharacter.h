@@ -101,6 +101,12 @@ public:
 	bool Avoiding;
 	bool Invincible;
 
+
+	void damagePlayer(float damageTaken, float knockback);
+
+	void processHit();
+
+
 private:
 	USoundWave* HurtSound1;
 	USoundWave* HurtSound2;

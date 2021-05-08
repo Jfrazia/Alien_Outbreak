@@ -53,15 +53,26 @@ void ARockProjectileActor::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, A
 		float rockY = this->GetActorLocation().Y;
 		AAlien_OutbreakCharacter* player = (AAlien_OutbreakCharacter*)GetWorld()->GetFirstPlayerController()->GetPawn();
 		if (!player->Avoiding && !player->Invincible) {
-			((AAlien_OutbreakCharacter*)GetWorld()->GetFirstPlayerController()->GetPawn())->beingHit(0.04f, rockY);
+			player->damagePlayer(0.04f, rockY);
 			this->Destroy();
-		}
+		} /* else if (){
+		  set something to 
+
+		  variable that stores whats in your hand
+			null or whats in your hand
+			if there is something in your hands, you should be in the grab state
+
+
+			playerCheckGrab
+		  }
+		  */
 	}
-	else if (OtherActor->IsA(AAlien_BreakOutBossOne::StaticClass()) || OtherActor->IsA(ARockProjectileActor::StaticClass())) {
+	else if (OtherActor->IsA(AAlien_BreakOutBossOne::StaticClass()) || OtherActor->IsA(ARockProjectileActor::StaticClass())) 
+	{
+
 	}
 	else if (OtherActor->IsA(APAttackHitbox::StaticClass())) {
 		GetWorld()->DestroyActor(OtherActor);
-		this->Destroy();
 	}
 }
 
