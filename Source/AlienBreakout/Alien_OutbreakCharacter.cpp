@@ -132,6 +132,8 @@ void AAlien_OutbreakCharacter::SetupPlayerInputComponent(class UInputComponent* 
 	PlayerInputComponent->BindAction("AirDash", IE_Pressed, this, &AAlien_OutbreakCharacter::AirDash);
 	PlayerInputComponent->BindAction("PAttack", IE_Pressed, this, &AAlien_OutbreakCharacter::PAttack);
 	PlayerInputComponent->BindAction("Grab", IE_Pressed, this, &AAlien_OutbreakCharacter::Grab);
+	FInputActionBinding& pause = PlayerInputComponent->BindAction("Pause", IE_Pressed, this, &AAlien_OutbreakCharacter::Pause);
+	pause.bExecuteWhenPaused = true;
 
 
 	PlayerInputComponent->BindTouch(IE_Pressed, this, &AAlien_OutbreakCharacter::TouchStarted);
@@ -246,6 +248,11 @@ void AAlien_OutbreakCharacter::Grab()
 
 }
 
+void AAlien_OutbreakCharacter::Pause() 
+{
+	FSMUpdate(PAUSE);
+}
+
 
 /// 
 /// State Machine
@@ -342,6 +349,16 @@ void AAlien_OutbreakCharacter::FSMUpdate(GameStates nState)
 		}
 	}
 
+	if (nState == GameStates::PAUSE)
+	{
+		if (Event == GameEvents::ON_ENTER) {
+			Pause_Enter();
+		}
+		if (Event == GameEvents::ON_UPDATE) {
+			Pause_Update();
+		}
+	}
+
 	// Append any GameStates you add to this example..
 }
 
@@ -376,6 +393,9 @@ void AAlien_OutbreakCharacter::SetFSMState(GameStates newState)
 		break;
 	case GameStates::THROW:
 		Throw_Exit();
+		break;
+	case GameStates::PAUSE:
+		Pause_Exit();
 		break;
 	default:
 		return;
@@ -610,4 +630,30 @@ void AAlien_OutbreakCharacter::Throw_Exit()
 	Holding = false;
 	FSMUpdate(IDLE);
 
+}
+
+void AAlien_OutbreakCharacter::Pause_Enter()
+{
+
+	// Change to GameEvents to Update when called
+
+}
+
+void AAlien_OutbreakCharacter::Pause_Update()
+{
+	// Called once a frame when in the RETREAT GameStates state
+	// Implement functionality for Retreat...
+	if (UGameplayStatics::IsGamePaused(GetWorld()) == false) {
+		UGameplayStatics::SetGamePaused(GetWorld(), true);
+	}
+	else {
+		UGameplayStatics::SetGamePaused(GetWorld(), false);
+	}
+
+	
+}
+
+void AAlien_OutbreakCharacter::Pause_Exit()
+{
+	// Implement any functionality for leaving the Retreat state
 }

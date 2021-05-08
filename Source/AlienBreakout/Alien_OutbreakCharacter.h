@@ -45,6 +45,8 @@ protected:
 
 	void Grab();
 
+	void Pause();
+
 	UFUNCTION()
 		void AirDashCD();
 
@@ -125,7 +127,7 @@ private:
 
 	float invincibleTime;
 
-	enum GameStates { IDLE, MOVE, JUMP, DASH, ATTACK, HURT, DEATH, GRAB, THROW };
+	enum GameStates { IDLE, MOVE, JUMP, DASH, ATTACK, HURT, DEATH, GRAB, THROW, PAUSE };
 	GameStates State = GameStates::IDLE;
 
 	enum GameEvents { ON_ENTER, ON_UPDATE };
@@ -169,6 +171,10 @@ private:
 	void Throw_Enter();
 	void Throw_Update();
 	void Throw_Exit();
+
+	void Pause_Enter();
+	void Pause_Update();
+	void Pause_Exit();
 
 
 };
