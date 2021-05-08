@@ -389,7 +389,6 @@ void AAlien_OutbreakCharacter::SetFSMState(GameStates newState)
 void AAlien_OutbreakCharacter::Idle_Enter()
 {
 
-
 	// Change to GameEvents to Update when called
 	Event = GameEvents::ON_UPDATE;
 }
@@ -595,8 +594,6 @@ void AAlien_OutbreakCharacter::Throw_Update()
 		loc.Y += -70.f;
 	else
 		loc.Y += 70.f;
-
-	Holding = false;
 	//Creates the sphere infront of the player. 
 	//can use facing right to make it face the right way.
 	//When it collides with the boss, it'll do damage.
@@ -604,9 +601,13 @@ void AAlien_OutbreakCharacter::Throw_Update()
 
 
 	AThrownItem* i = GetWorld()->SpawnActor<AThrownItem>(loc, GetActorRotation());
+	SetFSMState(THROW);
+
 }
 
 void AAlien_OutbreakCharacter::Throw_Exit()
 {
+	Holding = false;
+	FSMUpdate(IDLE);
 
 }
