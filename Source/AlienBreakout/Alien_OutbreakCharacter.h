@@ -40,6 +40,8 @@ protected:
 
 	void AirDash();
 
+	//void AdjustCamera();
+
 	void PAttack();
 
 	void Grab();
