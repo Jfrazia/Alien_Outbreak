@@ -20,12 +20,12 @@ class AAlien_OutbreakCharacter : public ACharacter
 	GENERATED_BODY()
 
 		/** Side view camera */
-		UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
-		class UCameraComponent* SideViewCameraComponent;
+//		UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
+//		class UCameraComponent* SideViewCameraComponent;
 
 	/** Camera boom positioning the camera beside the character */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
-		class USpringArmComponent* CameraBoom;
+//	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
+//		class USpringArmComponent* CameraBoom;
 
 protected:
 
@@ -39,8 +39,6 @@ protected:
 	void TouchStopped(const ETouchIndex::Type FingerIndex, const FVector Location);
 
 	void AirDash();
-	
-	void AdjustCamera();
 
 	void PAttack();
 
@@ -80,9 +78,9 @@ public:
 	void beingHit(float minsHP, float rockY);
 
 	/** Returns SideViewCameraComponent subobject **/
-	FORCEINLINE class UCameraComponent* GetSideViewCameraComponent() const { return SideViewCameraComponent; }
+	//FORCEINLINE class UCameraComponent* GetSideViewCameraComponent() const { return SideViewCameraComponent; }
 	/** Returns CameraBoom subobject **/
-	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
+	//FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
 
 	UPROPERTY(BlueprintReadOnly)
 		bool Attacking;
