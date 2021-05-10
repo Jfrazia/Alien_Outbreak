@@ -45,6 +45,9 @@ ARockProjectileActor::ARockProjectileActor()
 	hp = 5;
 
 	direction = FVector(0.0,0.0,0.0);
+
+	static ConstructorHelpers::FObjectFinder<UParticleSystem> Particle(TEXT("ParticleSystem'/Game/StarterContent/Particles/P_Explosion.P_Explosion'"));
+	ParticleRock = Particle.Object;
 }
 
 
@@ -56,6 +59,10 @@ void ARockProjectileActor::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, A
 		AAlien_OutbreakCharacter* player = (AAlien_OutbreakCharacter*)GetWorld()->GetFirstPlayerController()->GetPawn();
 		if (!player->Avoiding && !player->Invincible) {
 			player->damagePlayer(0.04f, rockY);
+
+			if (ParticleRock)
+				UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), ParticleRock, GetActorLocation());
+
 			this->Destroy();
 		} /* else if (){
 		  set something to 

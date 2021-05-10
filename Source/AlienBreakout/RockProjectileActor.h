@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "Runtime/Engine/Classes/Particles/ParticleSystemComponent.h"
 #include "RockProjectileActor.generated.h"
 
 UCLASS()
@@ -22,6 +23,8 @@ protected:
 public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
+
+	UParticleSystem* ParticleRock;
 
 	UPROPERTY(EditAnywhere)
 		class UStaticMeshComponent* Mesh;
