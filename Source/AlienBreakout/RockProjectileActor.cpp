@@ -39,10 +39,12 @@ ARockProjectileActor::ARockProjectileActor()
 	rotateSpeed = 90.f;
 
 	timeTick = 0;
-	waitTime = 0.5;
-	readyToFire = false;
 	firing = false;
-	//direction;
+
+	aliveTime = 7;
+	hp = 5;
+
+	direction = FVector(0.0,0.0,0.0);
 }
 
 
@@ -72,7 +74,11 @@ void ARockProjectileActor::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, A
 
 	}
 	else if (OtherActor->IsA(APAttackHitbox::StaticClass())) {
-		GetWorld()->DestroyActor(OtherActor);
+		hp--;
+		OtherActor->Destroy();
+		if (hp <= 0)
+			this->Destroy();
+		
 	}
 }
 
@@ -90,21 +96,12 @@ void ARockProjectileActor::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	if (readyToFire) {
-		timeTick++;
-		//FVector distPerTick = readyDirection;
-		//distPerTick.X /= 
-		if (!firing)this->SetActorLocation(GetActorLocation() + readyDirection / (waitTime * 60));
-		if (timeTick >= waitTime * 60 && !firing) {
-			FVector targetLocation = GetWorld()->GetFirstPlayerController()->GetPawn()->GetActorLocation();
-			FVector curLocation = GetActorLocation();
-			direction = (targetLocation - curLocation);
-			direction.Normalize();
-			firing = true;
+	if (firing) {
+		if (timeTick >= aliveTime * 60) {
+			this->Destroy();
 		}
-		if (firing) {
-			fireAtPlayer();
-		}
+		SetActorLocation(GetActorLocation() + direction * fireSpeed);
+		rotateSelf(DeltaTime);
 	}
 	else {
 		rotating(DeltaTime);
@@ -133,21 +130,32 @@ void ARockProjectileActor::rotating(float DeltaTime) {
 	NewLocation.Y += rotateValue.Y;
 	NewLocation.Z += rotateValue.Z;
 
-	FRotator NewRotation = FRotator(0, angleAxis, 0);
+	FRotator NewRotation = FRotator(angleAxis, 0, 0);
 	FQuat QuatRotation = FQuat(NewRotation);
 	SetActorLocationAndRotation(NewLocation, QuatRotation, false, 0, ETeleportType::None);
+}
+
+void ARockProjectileActor::rotateSelf(float DeltaTime) {
+	angleAxis += DeltaTime * rotateSpeed * 5;
+	if (angleAxis >= 360) {
+		angleAxis = 0;
+	}
+	FRotator NewRotation = FRotator(angleAxis, 0, 0);
+	FQuat QuatRotation = FQuat(NewRotation);
+	SetActorRotation(QuatRotation, ETeleportType::None);
 }
 
 void ARockProjectileActor::readyFire() {
 	// Set to align with player
 	readyLoc = GetActorLocation();
-	readyLoc.X = 0;
-	readyDirection = readyLoc - GetActorLocation();
-	readyToFire = true;
-}
-
-void ARockProjectileActor::fireAtPlayer() {
-	//UE_LOG(LogTemp, Error, TEXT("Firing Direction: %s"), *direction.ToString());
-	SetActorLocation(GetActorLocation() + direction * fireSpeed);
-	return;
+	readyLoc.X = -60.0;
+	SetActorLocation(readyLoc);
+	if (direction.Equals(FVector(0.0, 0.0, 0.0))) {
+		FVector targetLocation = GetWorld()->GetFirstPlayerController()->GetPawn()->GetActorLocation();
+		FVector curLocation = GetActorLocation();
+		direction = (targetLocation - curLocation);
+	}
+	direction.Normalize();
+	firing = true;
+	timeTick = 0;
 }

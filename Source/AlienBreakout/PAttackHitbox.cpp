@@ -22,6 +22,9 @@ APAttackHitbox::APAttackHitbox()
 	Speed = 20.0;
 
 	RootComponent = SphereMesh;
+
+	timeTick = 0;
+	timeToLive = 7;
 }
 
 // Called when the game starts or when spawned
@@ -39,6 +42,10 @@ void APAttackHitbox::BeginPlay()
 void APAttackHitbox::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+	
+	timeTick++;
+	if(timeTick >= timeToLive * 60)
+		this->Destroy();
 
 	if (forward.Y > 0)
 		SetActorLocation(GetActorLocation() + FVector(0.0, 1.0, 0.0) * Speed);

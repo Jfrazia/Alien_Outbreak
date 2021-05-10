@@ -25,7 +25,6 @@ protected:
 private:
 	int timeTick;
 	int fps;
-	double summonCoolDown;
 	double attackCoolDown;
 	double teleportCoolDown;
 
@@ -46,18 +45,25 @@ private:
 	TArray<FVector> teleportLocation;
 
 	FTimerHandle TeleportTimerHandle;
-	FTimerHandle SummonTimerHandle;
 	FTimerHandle AttackTimerHandle;
+	FTimerHandle SqeuenceThrowTimerHandle;
 	FTimerHandle RushAttackWaitTimerHandle;
 	FTimerHandle RushAttackTimerHandle;
 
 	void Teleport();
 	void TeleportTo(int index);
 	void Summon();
-	void Attack();
+
 	void RushAttack();
 	void RushAttackDone();
 	void SpecialRush();
+
+	void RockAttack();
+	void NormalThrow();
+	void ShotGunRock();
+	void SequenceThrow();
+	int SequenceThrowTimes;
+	int SequenceThrowCounts;
 
 	bool facingLeft;
 

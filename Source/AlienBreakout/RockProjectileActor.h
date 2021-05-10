@@ -33,17 +33,18 @@ public:
 	void rotating(float DeltaTime);
 
 	int timeTick;
-	float waitTime;
-	bool readyToFire;
 	bool firing;
 	FVector direction;
 
 	float fireSpeed;
 	void readyFire();
-	void fireAtPlayer();
+	void rotateSelf(float DeltaTime);
 
 	FVector readyLoc;
 	FVector readyDirection;
+
+	float aliveTime;
+	int hp;
 
 	UFUNCTION()
 		void OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);

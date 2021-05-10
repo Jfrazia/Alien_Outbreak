@@ -40,6 +40,7 @@ protected:
 
 	void AirDash();
 	
+	void AdjustCamera();
 
 	void PAttack();
 
@@ -71,6 +72,8 @@ protected:
 	FTimerHandle InvincibleTimerHandle;
 
 	bool facingRight = true;
+
+	FVector prevLoc;
 public:
 	AAlien_OutbreakCharacter();
 	void PlayerHP_Setter(float new_HP);

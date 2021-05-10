@@ -1,6 +1,7 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "Alien_OutbreakCharacter.h"
+#include "Alien_BreakOutBossOne.h"
 #include "PAttackHitbox.h"
 #include "ThrownItem.h"
 
@@ -40,6 +41,7 @@ AAlien_OutbreakCharacter::AAlien_OutbreakCharacter()
 	SideViewCameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("SideViewCamera"));
 	SideViewCameraComponent->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
 	SideViewCameraComponent->bUsePawnControlRotation = false; // We don't want the controller rotating the camera
+	
 
 	// Configure character movement
 	GetCharacterMovement()->bOrientRotationToMovement = true; // Face in the direction we are moving..
@@ -79,7 +81,7 @@ AAlien_OutbreakCharacter::AAlien_OutbreakCharacter()
 	Dashing = false;
 	DashCDing = false;
 	dashSpeed = 30.f;
-	AvoidTime = 0.15;
+	AvoidTime = 0.5;
 	Avoiding = false;
 
 	invincibleTime = 0.5;
@@ -101,6 +103,9 @@ void AAlien_OutbreakCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	// Adjust camera
+	AdjustCamera();
+
 	// Keep player in right Axis
 	FVector playerLoc = GetActorLocation();
 	if (playerLoc.X != -60.0) {
@@ -118,6 +123,33 @@ void AAlien_OutbreakCharacter::Tick(float DeltaTime)
 			knockingBack = false;
 	}
 	
+}
+
+void AAlien_OutbreakCharacter::AdjustCamera() {
+	TArray<AActor*> FoundActors;
+	UGameplayStatics::GetAllActorsOfClass(GetWorld(), AAlien_BreakOutBossOne::StaticClass(), FoundActors);
+	FVector BossLoc = this->GetActorLocation();
+	FVector PlayerLoc = this->GetActorLocation();
+	for (AActor* Actor : FoundActors)
+	{
+		BossLoc = Actor->GetActorLocation();
+	}
+	FVector midleLoc = FVector(450.0, 0.0, 0.0);
+	midleLoc.Y = PlayerLoc.Y * 0.6 + BossLoc.Y * 0.4;
+	midleLoc.Z = PlayerLoc.Z * 0.6 + BossLoc.Z * 0.4;
+	
+	float distance = sqrt(pow(PlayerLoc.Y - BossLoc.Y, 2) + pow(PlayerLoc.Z - BossLoc.Z, 2));
+
+	midleLoc.X += distance / 3;
+
+	FVector currentLoc = SideViewCameraComponent->GetComponentLocation();
+	float Xdistance = FMath::Min(midleLoc.X - currentLoc.X, 20.f);
+	float Ydistance = FMath::Min(midleLoc.Y - currentLoc.Y, 40.f);
+	float Zdistance = FMath::Min(midleLoc.Z - currentLoc.Z, 20.f);
+
+	FVector moveLoc = FVector(Xdistance, Ydistance, Zdistance) + currentLoc;
+
+	SideViewCameraComponent->SetWorldLocation(moveLoc);
 }
 
 //////////////////////////////////////////////////////////////////////////
