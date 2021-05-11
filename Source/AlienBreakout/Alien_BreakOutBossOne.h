@@ -48,23 +48,34 @@ private:
 	FTimerHandle TeleportTimerHandle;
 	FTimerHandle AttackTimerHandle;
 	FTimerHandle SqeuenceThrowTimerHandle;
+	FTimerHandle SpreadThrowTimerHandle;
 	FTimerHandle RushAttackWaitTimerHandle;
+	FTimerHandle RushAttackCDTimerHandle;
 	FTimerHandle RushAttackTimerHandle;
 
 	void Teleport();
-	void TeleportTo(int index);
+	void TeleportTo(FVector teleportLocation);
+	FVector GetCloseLocation();
 	void Summon();
 
 	void RushAttack();
+	void NormalRush();
 	void RushAttackDone();
+	void RushAttackCD();
 	void SpecialRush();
 
 	void RockAttack();
 	void NormalThrow();
-	void ShotGunRock();
+	void ShotGunThrow();
 	void SequenceThrow();
+	void SpreadThrow();
 	int SequenceThrowTimes;
 	int SequenceThrowCounts;
+	
+	bool specialRockAttacking;
+
+	int SpreadThrowTimes;
+	int SpreadThrowCounts;
 
 	bool facingLeft;
 

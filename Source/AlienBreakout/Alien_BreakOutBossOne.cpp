@@ -23,36 +23,37 @@ AAlien_BreakOutBossOne::AAlien_BreakOutBossOne()
 	timeTick = 0;
 	fps = 60;
 
-	attackCoolDown = 2;
-	teleportCoolDown = 10;
+	attackCoolDown = 3;
+	teleportCoolDown = 8;
 
 	rockLeft = 0;
 	maxNumRock = 12;
 
-	teleportLocation.Add(FVector(-60.0, -1630.0, 1938.0));
-	teleportLocation.Add(FVector(-60.0, -739.0, 2548.0));
-	teleportLocation.Add(FVector(-60.0, -1630.0, 3038.0));
-	teleportLocation.Add(FVector(-60.0, -1360.0, 3718.0));
+	teleportLocation.Add(FVector(-60.0, -1210.0, 1938.0));
+	teleportLocation.Add(FVector(-60.0, -930.0, 2658.0));
+	teleportLocation.Add(FVector(-60.0, -1520.0, 2978.0));
+	teleportLocation.Add(FVector(-60.0, -1030.0, 3788.0));
 
-	teleportLocation.Add(FVector(-60.0, 1790.0, 1938.0));
-	teleportLocation.Add(FVector(-60.0, 1950.0, 3068.0));
-	teleportLocation.Add(FVector(-60.0, 1920.0, 3818.0));
-	//teleportLocation.Add(FVector(-60.0, 0.0, 2700.0));
+	teleportLocation.Add(FVector(-60.0, 1660.0, 1938.0));
+	teleportLocation.Add(FVector(-60.0, 1730.0, 3238.0));
+	teleportLocation.Add(FVector(-60.0, 1560.0, 3788.0));
 
 	facingLeft = true;
 
-	rushAttackCoolDown = 15;
+	rushAttackCoolDown = 10;
 	rushAttackWaitTime = 1;
-	rushAttackDuration = 2.5;
+	rushAttackDuration = 2.0;
 	rushAttackSpeed = 30;
 	rushAttackCD = false;
 	rushAttacking = false;
 
 	specialRushing = false;;
-	specialRushStage = 0;
 
 	SequenceThrowTimes = 5;
-	SequenceThrowCounts = 0;
+
+	SpreadThrowTimes = 16;
+
+	specialRockAttacking = false;
 
 	static ConstructorHelpers::FObjectFinder<UParticleSystem> Particle(TEXT("/Game/StarterContent/Particles/P_Explosion.P_Explosion"));
 	ParticleTeleport = Particle.Object;
@@ -76,48 +77,35 @@ void AAlien_BreakOutBossOne::BeginPlay()
 }
 
 void AAlien_BreakOutBossOne::Teleport() {
-	if (specialRushing || rushAttacking) {
-		GetWorld()->GetTimerManager().SetTimer(TeleportTimerHandle, this, &AAlien_BreakOutBossOne::Teleport, teleportCoolDown, false);
+	if (specialRushing || rushAttacking || specialRockAttacking) {
+		GetWorld()->GetTimerManager().SetTimer(TeleportTimerHandle, this, &AAlien_BreakOutBossOne::Teleport, 2.0, false);
 		return;
 	}
+	if (FMath::RandRange(1,100) < 80) {
 
-	int index = 0;
-	int i = 0;
-	int previousDiff = 10000;
-	FVector playerLoc = GetWorld()->GetFirstPlayerController()->GetPawn()->GetActorLocation();
-	for (FVector teleLoc : teleportLocation) {
-		int newDiff = sqrt(pow(playerLoc.Y - teleLoc.Y, 2) + pow(playerLoc.Z - teleLoc.Z, 2) * 5);
-		//int newDiff = abs(playerLoc.Z - teleLoc.Z);
-		if (newDiff < previousDiff) {
-			index = i;
-			previousDiff = newDiff;
-		}
-		i++;
+		TeleportTo(GetCloseLocation());
+
+		GetWorld()->GetTimerManager().SetTimer(TeleportTimerHandle, this, &AAlien_BreakOutBossOne::Teleport, teleportCoolDown, false);
+
+		GetWorld()->GetTimerManager().SetTimer(RushAttackWaitTimerHandle, this, &AAlien_BreakOutBossOne::RushAttack, rushAttackWaitTime, false);
 	}
-
-	if(!GetActorLocation().Equals(teleportLocation[index]))
-		TeleportTo(index);
-
-	GetWorld()->GetTimerManager().SetTimer(TeleportTimerHandle, this, &AAlien_BreakOutBossOne::Teleport, teleportCoolDown, false);
-
-	// 25% Special Rush, 75% Normal Rush
-	if (!rushAttackCD) {
-		int rand = FMath::RandRange(1, 100);
-		//rand = 100;
-		if (rand > 75) 
-			GetWorld()->GetTimerManager().SetTimer(RushAttackWaitTimerHandle, this, &AAlien_BreakOutBossOne::SpecialRush, rushAttackWaitTime, false);
-		else
-			GetWorld()->GetTimerManager().SetTimer(RushAttackWaitTimerHandle, this, &AAlien_BreakOutBossOne::RushAttack, rushAttackWaitTime, false);
+	else {
+		int index = FMath::RandRange(0, 6);
+		TeleportTo(teleportLocation[index]);
+		GetWorld()->GetTimerManager().SetTimer(TeleportTimerHandle, this, &AAlien_BreakOutBossOne::Teleport, teleportCoolDown, false);
 	}
 }
 
-void AAlien_BreakOutBossOne::TeleportTo(int index) {
+void AAlien_BreakOutBossOne::TeleportTo(FVector Location) {
+	if (GetActorLocation().Equals(Location))
+		return;
+
 	if (ParticleTeleport)
 		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), ParticleTeleport, GetActorLocation());
 
-	SetActorLocation(teleportLocation[index]);
+	SetActorLocation(Location);
 
-	if (teleportLocation[index].Y > 0) {
+	if (Location.Y > 0) {
 		if (facingLeft) {
 			SetActorRotation(FRotator(0.0, 180.0, 0.0), ETeleportType::None);
 		}
@@ -130,36 +118,71 @@ void AAlien_BreakOutBossOne::TeleportTo(int index) {
 	}
 }
 
+FVector AAlien_BreakOutBossOne::GetCloseLocation() {
+	int index = 0;
+	int i = 0;
+	int previousDiff = INT_MAX;
+	FVector playerLoc = GetWorld()->GetFirstPlayerController()->GetPawn()->GetActorLocation();
+	for (FVector teleLoc : teleportLocation) {
+		int newDiff = sqrt(pow(playerLoc.Y - teleLoc.Y, 2) + pow(playerLoc.Z - teleLoc.Z, 2) * 10);
+		if (newDiff < previousDiff && sqrt(pow(playerLoc.Y - teleLoc.Y, 2) + pow(playerLoc.Z - teleLoc.Z, 2)) > 500) {
+			index = i;
+			previousDiff = newDiff;
+		}
+		i++;
+	}
+	return teleportLocation[index];
+}
+
 void AAlien_BreakOutBossOne::RushAttack() {
+	// 25% Special Rush, 75% Normal Rush
+	if (!rushAttackCD) {
+		if (FMath::RandRange(1, 100) > 75)
+			SpecialRush();
+		else
+			NormalRush();
+	}
+}
+
+void AAlien_BreakOutBossOne::NormalRush() {
 	rushAttackCD = true;
 	rushAttacking = true;
-	timeTick = 0;
-
-	GetWorld()->GetTimerManager().SetTimer(RushAttackTimerHandle, this, &AAlien_BreakOutBossOne::RushAttackDone, rushAttackCoolDown, false);
+	GetWorld()->GetTimerManager().SetTimer(RushAttackCDTimerHandle, this, &AAlien_BreakOutBossOne::RushAttackCD, rushAttackCoolDown, false);
+	GetWorld()->GetTimerManager().SetTimer(RushAttackTimerHandle, this, &AAlien_BreakOutBossOne::RushAttackDone, rushAttackDuration, false);
+	GetWorld()->GetTimerManager().SetTimer(AttackTimerHandle, this, &AAlien_BreakOutBossOne::RockAttack, attackCoolDown, false);
 }
 
 void AAlien_BreakOutBossOne::SpecialRush() {
 	rushAttackCD = true;
 	specialRushing = true;
-	timeTick = 0;
+	GetWorld()->GetTimerManager().SetTimer(RushAttackTimerHandle, this, &AAlien_BreakOutBossOne::RushAttackDone, rushAttackDuration, false);
 
+	specialRushStage++;
 	switch (specialRushStage) {
-	case 0: TeleportTo(4); specialRushStage++; break;
-	case 1: TeleportTo(1); specialRushStage++; break;
-	case 2: TeleportTo(5); specialRushStage++; break;
-	case 3: GetWorld()->GetTimerManager().SetTimer(RushAttackTimerHandle, this, &AAlien_BreakOutBossOne::RushAttackDone, rushAttackCoolDown, false);
-		specialRushing = false; specialRushStage = 0; Teleport(); break;
+	case 1: TeleportTo(teleportLocation[4]); break;
+	case 2: TeleportTo(teleportLocation[1]); break;
+	case 3: TeleportTo(teleportLocation[5]); break;
+	case 4: GetWorld()->GetTimerManager().SetTimer(RushAttackCDTimerHandle, this, &AAlien_BreakOutBossOne::RushAttackCD, rushAttackCoolDown, false);
+		GetWorld()->GetTimerManager().SetTimer(AttackTimerHandle, this, &AAlien_BreakOutBossOne::RockAttack, attackCoolDown, false);
+		specialRushing = false; specialRushStage = 0; TeleportTo(GetCloseLocation()); break;
 	}
 }
 
 void AAlien_BreakOutBossOne::RushAttackDone() {
+	if (rushAttacking) {
+		rushAttacking = false;
+		TeleportTo(GetCloseLocation());
+	}
+	else if (specialRushing) {
+		SpecialRush();
+	}
+}
+
+void AAlien_BreakOutBossOne::RushAttackCD() {
 	rushAttackCD = false;
 }
 
 void AAlien_BreakOutBossOne::Summon() {
-	if (specialRushing || rushAttacking) {
-		return;
-	}
 	if (rockLeft <= maxNumRock - 3) {
 		FVector loc = GetActorLocation();
 
@@ -171,17 +194,17 @@ void AAlien_BreakOutBossOne::Summon() {
 		loc.X += 200;
 		rocks.Add(GetWorld()->SpawnActor<ARockProjectileActor>(loc, GetActorRotation()));
 
-		rocks[rockLeft]->axis = FVector(0, 0.5, 0.5);
+		rocks[rockLeft]->axis = FVector(0, FMath::Rand() % 100 - 50, FMath::Rand() % 100 - 50).GetSafeNormal();
 		rocks[rockLeft]->angleAxis = 180.f;
 		rocks[rockLeft]->rotateSpeed = 80.f;
 		rocks[rockLeft]->dimention = FVector(330, 0, 0);
 
-		rocks[rockLeft + 1]->axis = FVector(0, -0.5, 0.5);
+		rocks[rockLeft + 1]->axis = FVector(0, FMath::Rand() % 100 - 50, FMath::Rand() % 100 - 50).GetSafeNormal();
 		rocks[rockLeft + 1]->angleAxis = 90.f;
 		rocks[rockLeft + 1]->rotateSpeed = 80.f;
 		rocks[rockLeft + 1]->dimention = FVector(240, 0, 0);
 
-		rocks[rockLeft + 2]->axis = FVector(0, 0, 1);
+		rocks[rockLeft + 2]->axis = FVector(0, FMath::Rand() % 100 - 50, FMath::Rand() % 100 - 50).GetSafeNormal();
 		rocks[rockLeft + 2]->angleAxis = -90.f;
 		rocks[rockLeft + 2]->rotateSpeed = 80.f;
 		rocks[rockLeft + 2]->dimention = FVector(180, 0, 0);
@@ -195,18 +218,29 @@ void AAlien_BreakOutBossOne::RockAttack() {
 		GetWorld()->GetTimerManager().SetTimer(AttackTimerHandle, this, &AAlien_BreakOutBossOne::RockAttack, attackCoolDown, false);
 		return;
 	}
+
 	Summon();
-	int rand = FMath::RandRange(1, 100);
-	if (rand < 50) {
+	int rand = FMath::RandRange(1, 125);
+	if (rand < 30) {
 		NormalThrow();
+		GetWorld()->GetTimerManager().SetTimer(AttackTimerHandle, this, &AAlien_BreakOutBossOne::RockAttack, attackCoolDown, false);
 	}
 	else if (rand < 75) {
-		ShotGunRock();
+		ShotGunThrow();
+		GetWorld()->GetTimerManager().SetTimer(AttackTimerHandle, this, &AAlien_BreakOutBossOne::RockAttack, attackCoolDown, false);
 	}
-	else if (rand <= 100) {
+	else if (rand <= 110) {
+		specialRockAttacking = true;
 		SequenceThrow();
 	}
-	GetWorld()->GetTimerManager().SetTimer(AttackTimerHandle, this, &AAlien_BreakOutBossOne::RockAttack, attackCoolDown, false);
+	else if (rand <= 125) {
+		specialRockAttacking = true;
+		SpreadThrow();
+	}
+	else {
+		GetWorld()->GetTimerManager().SetTimer(AttackTimerHandle, this, &AAlien_BreakOutBossOne::RockAttack, attackCoolDown, false);
+	}
+	
 }
 
 void AAlien_BreakOutBossOne::NormalThrow() {
@@ -218,7 +252,7 @@ void AAlien_BreakOutBossOne::NormalThrow() {
 	}
 }
 
-void AAlien_BreakOutBossOne::ShotGunRock() {
+void AAlien_BreakOutBossOne::ShotGunThrow() {
 	for (int i = 0; i < 3; i++) {
 		int rand = FMath::RandRange(0, rockLeft - 1);
 		switch (i) {
@@ -231,17 +265,60 @@ void AAlien_BreakOutBossOne::ShotGunRock() {
 		rockLeft--;
 	}
 }
+
 void AAlien_BreakOutBossOne::SequenceThrow() {
-	if(rockLeft <= 0) Summon();
+	Summon();
 	SequenceThrowCounts++;
 	NormalThrow();
-	GetWorld()->GetTimerManager().SetTimer(AttackTimerHandle, this, &AAlien_BreakOutBossOne::RockAttack, attackCoolDown, false);
+	
 	if(SequenceThrowCounts >= SequenceThrowTimes){
-		UE_LOG(LogTemp, Warning, TEXT("Hi!"));
 		SequenceThrowCounts = 0;
+		specialRockAttacking = false;
+		GetWorld()->GetTimerManager().SetTimer(AttackTimerHandle, this, &AAlien_BreakOutBossOne::RockAttack, attackCoolDown, false);
 	}
 	else
 		GetWorld()->GetTimerManager().SetTimer(SqeuenceThrowTimerHandle, this, &AAlien_BreakOutBossOne::SequenceThrow, 0.5f, false);
+}
+
+
+void AAlien_BreakOutBossOne::SpreadThrow() {
+	TeleportTo(FVector(-60.0, 200.0, 2600.0));
+
+	Summon();
+	SpreadThrowCounts++;
+
+	int rand = FMath::RandRange(0, rockLeft - 1);
+	switch (SpreadThrowCounts % 16) {
+	case 15:  rocks[rand]->direction = FVector(0.0, -1.0, 0.0); break;
+	case 0:  rocks[rand]->direction = FVector(0.0, -2.0, -1.0); break;
+	case 1:  rocks[rand]->direction = FVector(0.0, -1.0, -1.0); break;
+	case 2:  rocks[rand]->direction = FVector(0.0, -1.0, -2.0); break;
+	case 3:  rocks[rand]->direction = FVector(0.0, 0.0, -1.0); break;
+	case 4:  rocks[rand]->direction = FVector(0.0, 1.0, -2.0); break;
+	case 5:  rocks[rand]->direction = FVector(0.0, 1.0, -1.0); break;
+	case 6:  rocks[rand]->direction = FVector(0.0, 2.0, -1.0); break;
+	case 7:  rocks[rand]->direction = FVector(0.0, 1.0, 0.0); break;
+	case 8:  rocks[rand]->direction = FVector(0.0, 2.0, -1.0); break;
+	case 9:  rocks[rand]->direction = FVector(0.0, 1.0, -1.0); break;
+	case 10:  rocks[rand]->direction = FVector(0.0, 1.0, -2.0); break;
+	case 11:  rocks[rand]->direction = FVector(0.0, 0.0, -1.0); break;
+	case 12:  rocks[rand]->direction = FVector(0.0, -1.0, -2.0); break;
+	case 13:  rocks[rand]->direction = FVector(0.0, -1.0, -1.0); break;
+	case 14:  rocks[rand]->direction = FVector(0.0, -2.0, -1.0); break;
+
+	}
+	rocks[rand]->readyFire();
+	rocks.RemoveAt(rand);
+	rockLeft--;
+
+	if (SpreadThrowCounts >= SpreadThrowTimes) {
+		SpreadThrowCounts = 0;
+		specialRockAttacking = false;
+		GetWorld()->GetTimerManager().SetTimer(AttackTimerHandle, this, &AAlien_BreakOutBossOne::RockAttack, attackCoolDown, false);
+		GetWorld()->GetTimerManager().SetTimer(TeleportTimerHandle, this, &AAlien_BreakOutBossOne::Teleport, 3, false);
+	}
+	else
+		GetWorld()->GetTimerManager().SetTimer(SpreadThrowTimerHandle, this, &AAlien_BreakOutBossOne::SpreadThrow, 0.2f, false);
 }
 
 // Called every frame
@@ -255,16 +332,6 @@ void AAlien_BreakOutBossOne::Tick(float DeltaTime)
 			SetActorLocation(GetActorLocation() + FVector(0.0, rushAttackSpeed, 0.0));
 		else
 			SetActorLocation(GetActorLocation() + FVector(0.0, -rushAttackSpeed, 0.0));
-		timeTick++;
-		if (timeTick > fps * rushAttackDuration) {
-			if (rushAttacking) {
-				rushAttacking = false;
-				Teleport();
-			}
-			else if (specialRushing) {
-				SpecialRush();
-			}
-		}
 	}
 }
 
@@ -278,7 +345,7 @@ void AAlien_BreakOutBossOne::hitByPlayer(float minsHP) {
 
 void AAlien_BreakOutBossOne::NotifyHit(class UPrimitiveComponent* MyComp, AActor* Other, class UPrimitiveComponent* OtherComp, bool bSelfMoved, FVector HitLocation, FVector HitNormal, FVector NormalImpulse, const FHitResult& Hit) {
 	Super::NotifyHit(MyComp, Other, OtherComp, bSelfMoved, HitLocation, HitNormal, NormalImpulse, Hit);
-	//UE_LOG(LogTemp, Warning, TEXT("HIT!"));
+	UE_LOG(LogTemp, Warning, TEXT("HIT!"));
 	if (Other->IsA(AAlien_OutbreakCharacter::StaticClass())) {
 		AAlien_OutbreakCharacter* player = (AAlien_OutbreakCharacter*)GetWorld()->GetFirstPlayerController()->GetPawn();
 		if (!player->Avoiding && !player->Invincible) {
