@@ -83,8 +83,11 @@ void ARockProjectileActor::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, A
 	else if (OtherActor->IsA(APAttackHitbox::StaticClass())) {
 		hp--;
 		OtherActor->Destroy();
-		if (hp <= 0)
+		if (hp <= 0) {
+			if (ParticleRock)
+				UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), ParticleRock, GetActorLocation());
 			this->Destroy();
+		}
 		
 	}
 }

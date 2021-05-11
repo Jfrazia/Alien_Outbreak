@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "RockProjectileActor.h"
+#include "Runtime/Engine/Classes/Particles/ParticleSystemComponent.h"
 #include "Alien_BreakOutBossOne.generated.h"
 
 UCLASS()
@@ -74,6 +75,8 @@ public:
 		TSubclassOf<class UBossHPWidget> WidgetClass;
 
 	void hitByPlayer(float minsHP);
+
+	UParticleSystem* ParticleTeleport;
 
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;

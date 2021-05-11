@@ -53,6 +53,9 @@ AAlien_BreakOutBossOne::AAlien_BreakOutBossOne()
 
 	SequenceThrowTimes = 5;
 	SequenceThrowCounts = 0;
+
+	static ConstructorHelpers::FObjectFinder<UParticleSystem> Particle(TEXT("/Game/StarterContent/Particles/P_Explosion.P_Explosion"));
+	ParticleTeleport = Particle.Object;
 }
 
 void AAlien_BreakOutBossOne::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -109,7 +112,11 @@ void AAlien_BreakOutBossOne::Teleport() {
 }
 
 void AAlien_BreakOutBossOne::TeleportTo(int index) {
+	if (ParticleTeleport)
+		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), ParticleTeleport, GetActorLocation());
+
 	SetActorLocation(teleportLocation[index]);
+
 	if (teleportLocation[index].Y > 0) {
 		if (facingLeft) {
 			SetActorRotation(FRotator(0.0, 180.0, 0.0), ETeleportType::None);
