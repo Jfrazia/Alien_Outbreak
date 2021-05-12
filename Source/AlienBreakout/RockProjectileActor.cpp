@@ -64,17 +64,9 @@ void ARockProjectileActor::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, A
 				UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), ParticleRock, GetActorLocation());
 
 			this->Destroy();
-		} /* else if (){
-		  set something to 
-
-		  variable that stores whats in your hand
-			null or whats in your hand
-			if there is something in your hands, you should be in the grab state
-
-
+		} else{
 			playerCheckGrab
 		  }
-		  */
 	}
 	else if (OtherActor->IsA(AAlien_BreakOutBossOne::StaticClass()) || OtherActor->IsA(ARockProjectileActor::StaticClass())) 
 	{

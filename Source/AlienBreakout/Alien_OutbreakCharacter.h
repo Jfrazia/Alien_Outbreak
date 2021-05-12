@@ -54,7 +54,6 @@ protected:
 	UFUNCTION()
 		void AirDashStop();
 
-
 	UFUNCTION()
 		void AvoidStop();
 
