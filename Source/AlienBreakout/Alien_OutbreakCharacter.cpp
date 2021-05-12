@@ -77,7 +77,7 @@ AAlien_OutbreakCharacter::AAlien_OutbreakCharacter()
 	HurtSound5 = Hurt5.Object;
 
 	AttackCD = 1.0f;
-	Attacking = false;
+	isAttacking = false;
 	DashCD = 1.0f;
 	Dashing = false;
 	DashCDing = false;
@@ -88,7 +88,9 @@ AAlien_OutbreakCharacter::AAlien_OutbreakCharacter()
 	invincibleTime = 0.5;
 	Invincible = false;
 
-	Holding = false;
+	isHolding = false;
+
+	isThrowing = false;
 }
 
 void AAlien_OutbreakCharacter::BeginPlay()
@@ -270,10 +272,10 @@ void AAlien_OutbreakCharacter::AirDashStop()
 
 void AAlien_OutbreakCharacter::PAttack()
 {
-	if(!Holding)
+	if(!isHolding)
 		FSMUpdate(ATTACK);
 	else
-		FSMUpdate(THROW);
+		SetFSMState(GRAB);
 }
 
 void AAlien_OutbreakCharacter::Grab() 
@@ -523,9 +525,9 @@ void AAlien_OutbreakCharacter::Dash_Update()
 
 	FVector playerLoc = GetActorLocation();
 	if(facingRight)
-		LaunchCharacter(FVector(0, -2000, 0), false, true);
+		LaunchCharacter(FVector(0, -1000, 0), false, true);
 	else
-		LaunchCharacter(FVector(0, 2000, 0), false, true);
+		LaunchCharacter(FVector(0, 1000, 0), false, true);
 
 
 	GetWorld()->GetTimerManager().SetTimer(AirDashCDTimerHandle, this, &AAlien_OutbreakCharacter::AirDashCD, DashCD, false);
@@ -566,7 +568,7 @@ void AAlien_OutbreakCharacter::Attack_Update()
 	else
 		loc.Y += 70.f;
 
-	Attacking = true;
+	isAttacking = true;
 	//Creates the sphere infront of the player. 
 	//can use facing right to make it face the right way.
 	//When it collides with the boss, it'll do damage.
@@ -587,7 +589,7 @@ void AAlien_OutbreakCharacter::Attack_Exit()
 	// 
 	// Implement any functionality for leaving the Retreat state
 	UE_LOG(LogTemp, Warning, TEXT("Attack Exit"));
-	Attacking = false;
+	isAttacking = false;
 	FSMUpdate(IDLE);
 
 
@@ -640,12 +642,15 @@ void AAlien_OutbreakCharacter::Grab_Update()
 	// Called once a frame when in the RETREAT GameStates state
 	// Implement functionality for Retreat...
 
-	Holding = true;
+	isHolding = true;
 }
 
 void AAlien_OutbreakCharacter::Grab_Exit()
 {
-	// Implement any functionality for leaving the Retreat state
+	// Implement any functionality for leaving the Retreat state'
+	isHolding = false;
+	FSMUpdate(THROW);
+
 }
 
 void AAlien_OutbreakCharacter::Throw_Enter()
@@ -655,6 +660,7 @@ void AAlien_OutbreakCharacter::Throw_Enter()
 
 void AAlien_OutbreakCharacter::Throw_Update()
 {
+	isThrowing = true;
 	FVector loc = GetActorLocation();
 	if (facingRight)
 		loc.Y += -70.f;
@@ -673,7 +679,7 @@ void AAlien_OutbreakCharacter::Throw_Update()
 
 void AAlien_OutbreakCharacter::Throw_Exit()
 {
-	Holding = false;
+	isThrowing = false;
 	FSMUpdate(IDLE);
 
 }

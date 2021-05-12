@@ -61,8 +61,7 @@ void APAttackHitbox::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor*
 
 		((AAlien_BreakOutBossOne*)OtherActor)->hitByPlayer(0.0075f);
 		this->Destroy();
-	}else
-		this->Destroy();
+	}
 
 }
 

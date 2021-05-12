@@ -85,11 +85,13 @@ public:
 	//FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
 
 	UPROPERTY(BlueprintReadOnly)
-		bool Attacking;
+		bool isAttacking;
 
 	UPROPERTY(BlueprintReadOnly)
-		bool Holding;
+		bool isHolding;
 
+	UPROPERTY(BlueprintReadOnly)
+		bool isThrowing;
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
