@@ -19,13 +19,6 @@ class AAlien_OutbreakCharacter : public ACharacter
 {
 	GENERATED_BODY()
 
-		/** Side view camera */
-//		UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
-//		class UCameraComponent* SideViewCameraComponent;
-
-	/** Camera boom positioning the camera beside the character */
-//	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
-//		class USpringArmComponent* CameraBoom;
 
 protected:
 
@@ -43,8 +36,6 @@ protected:
 	//void AdjustCamera();
 
 	void PAttack();
-
-	void Grab();
 
 	void Pause();
 
@@ -91,6 +82,12 @@ public:
 
 	UPROPERTY(BlueprintReadOnly)
 		bool isThrowing;
+
+	UPROPERTY(BlueprintReadOnly)
+		int attackTimerConst;
+
+	UPROPERTY(BlueprintReadOnly)
+		int attackTimer;
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -106,9 +103,13 @@ public:
 	bool Invincible;
 
 
+
+
 	void damagePlayer(float damageTaken, float knockback);
 
 	void processHit();
+
+	void playerCheckGrab();
 
 
 private:

@@ -7,6 +7,10 @@
 
 #include "Components/PrimitiveComponent.h"
 
+#include "Internationalization/Text.h"
+
+#include <string> 
+
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/InputComponent.h"
@@ -15,7 +19,6 @@
 #include "PlayerHPWidget.h"
 #include <Runtime/Engine/Classes/Kismet/GameplayStatics.h>
 #include "GameFramework/CharacterMovementComponent.h"
-
 
 
 AAlien_OutbreakCharacter::AAlien_OutbreakCharacter()
@@ -63,6 +66,9 @@ AAlien_OutbreakCharacter::AAlien_OutbreakCharacter()
 	knockBackTime = 0.05;
 	knockBackSpeed = 100.f;
 	fps = 60;
+
+	attackTimerConst = 20;
+	attackTimer = 0;
 
 	// Loading Hurt Sounds
 	static ConstructorHelpers::FObjectFinder<USoundWave> Hurt1(TEXT("SoundWave'/Game/Sounds/Hurt1'"));
@@ -126,37 +132,12 @@ void AAlien_OutbreakCharacter::Tick(float DeltaTime)
 		if (knockBackCount <= 0)
 			knockingBack = false;
 	}
-	
+
+	if(attackTimer >= 0) 
+		attackTimer--;
+	if (attackTimer <= 0 && isAttacking)
+		FSMUpdate(IDLE);
 }
-/*
-void AAlien_OutbreakCharacter::AdjustCamera() {
-	TArray<AActor*> FoundActors;
-	UGameplayStatics::GetAllActorsOfClass(GetWorld(), AAlien_BreakOutBossOne::StaticClass(), FoundActors);
-	FVector BossLoc = this->GetActorLocation();
-	FVector PlayerLoc = this->GetActorLocation();
-	for (AActor* Actor : FoundActors)
-	{
-		BossLoc = Actor->GetActorLocation();
-	}
-	FVector midleLoc = FVector(450.0, 0.0, 0.0);
-	midleLoc.Y = PlayerLoc.Y * 0.6 + BossLoc.Y * 0.4;
-	midleLoc.Z = PlayerLoc.Z * 0.6 + BossLoc.Z * 0.4;
-
-	float distance = sqrt(pow(PlayerLoc.Y - BossLoc.Y, 2) + pow(PlayerLoc.Z - BossLoc.Z, 2));
-
-	midleLoc.X += distance / 3;
-
-	FVector currentLoc = SideViewCameraComponent->GetComponentLocation();
-	float Xdistance = FMath::Min(midleLoc.X - currentLoc.X, 20.f);
-	float Ydistance = FMath::Min(midleLoc.Y - currentLoc.Y, 40.f);
-	float Zdistance = FMath::Min(midleLoc.Z - currentLoc.Z, 20.f);
-
-	FVector moveLoc = FVector(Xdistance, Ydistance, Zdistance) + currentLoc;
-
-	SideViewCameraComponent->SetWorldLocation(moveLoc);
-}
-
-*/
 //////////////////////////////////////////////////////////////////////////
 // Input
 
@@ -168,7 +149,7 @@ void AAlien_OutbreakCharacter::SetupPlayerInputComponent(class UInputComponent* 
 	PlayerInputComponent->BindAxis("MoveRight", this, &AAlien_OutbreakCharacter::MoveRight);
 	PlayerInputComponent->BindAction("AirDash", IE_Pressed, this, &AAlien_OutbreakCharacter::AirDash);
 	PlayerInputComponent->BindAction("PAttack", IE_Pressed, this, &AAlien_OutbreakCharacter::PAttack);
-	PlayerInputComponent->BindAction("Grab", IE_Pressed, this, &AAlien_OutbreakCharacter::Grab);
+	PlayerInputComponent->BindAction("Grab", IE_Pressed, this, &AAlien_OutbreakCharacter::playerCheckGrab);
 	FInputActionBinding& pause = PlayerInputComponent->BindAction("Pause", IE_Pressed, this, &AAlien_OutbreakCharacter::Pause);
 	pause.bExecuteWhenPaused = true;
 
@@ -179,7 +160,6 @@ void AAlien_OutbreakCharacter::SetupPlayerInputComponent(class UInputComponent* 
 
 void AAlien_OutbreakCharacter::MoveRight(float Value)
 {
-	FSMUpdate(MOVE);
 	// add movement in that direction
 	AddMovementInput(FVector(0.f, -1.f, 0.f), Value);
 	if (Value < 0)
@@ -278,7 +258,7 @@ void AAlien_OutbreakCharacter::PAttack()
 		SetFSMState(GRAB);
 }
 
-void AAlien_OutbreakCharacter::Grab() 
+void AAlien_OutbreakCharacter::playerCheckGrab()
 {
 	//handles grabbing said item, and setting the character to the grab state
 	FSMUpdate(GRAB);
@@ -465,6 +445,7 @@ void AAlien_OutbreakCharacter::Idle_Update()
 {
 	UE_LOG(LogTemp, Warning, TEXT("Idle_Update"));
 
+	isAttacking = false;
 	// Called once a frame when in the IDLE GameStates state
 	// Implement functionality for Idle...
 }
@@ -482,7 +463,8 @@ void AAlien_OutbreakCharacter::Move_Enter()
 
 void AAlien_OutbreakCharacter::Move_Update()
 {
-
+	
+	UE_LOG(LogTemp, Warning, TEXT("Move_Update"));
 }
 
 void AAlien_OutbreakCharacter::Move_Exit()
@@ -519,7 +501,8 @@ void AAlien_OutbreakCharacter::Dash_Update()
 {
 	// Called once a frame when in the RETREAT GameStates state
 	// Implement functionality for Retreat...
-	
+	isAttacking = false;
+
 	Avoiding = true;
 
 
@@ -556,10 +539,12 @@ void AAlien_OutbreakCharacter::Attack_Enter()
 	// Change to GameEvents to Update when called
 	Event = GameEvents::ON_UPDATE;
 	//Turn the Gun the right opacity
+	attackTimer = attackTimerConst;
 }
 
 void AAlien_OutbreakCharacter::Attack_Update()
 {
+	attackTimer = attackTimerConst;
 	// Called once a frame when in the RETREAT GameStates state
 	// Implement functionality for Retreat...
 	FVector loc = GetActorLocation();
@@ -577,8 +562,6 @@ void AAlien_OutbreakCharacter::Attack_Update()
 
 	APAttackHitbox* a = GetWorld()->SpawnActor<APAttackHitbox>(loc, GetActorRotation());
 	UE_LOG(LogTemp, Warning, TEXT("Attack up"));
-	SetFSMState(ATTACK);
-
 }
 
 void AAlien_OutbreakCharacter::Attack_Exit()
@@ -589,7 +572,6 @@ void AAlien_OutbreakCharacter::Attack_Exit()
 	// 
 	// Implement any functionality for leaving the Retreat state
 	UE_LOG(LogTemp, Warning, TEXT("Attack Exit"));
-	isAttacking = false;
 	FSMUpdate(IDLE);
 
 
@@ -641,15 +623,13 @@ void AAlien_OutbreakCharacter::Grab_Update()
 {
 	// Called once a frame when in the RETREAT GameStates state
 	// Implement functionality for Retreat...
-
+	isAttacking = false;
 	isHolding = true;
 }
 
 void AAlien_OutbreakCharacter::Grab_Exit()
 {
 	// Implement any functionality for leaving the Retreat state'
-	isHolding = false;
-	FSMUpdate(THROW);
 
 }
 
@@ -679,7 +659,7 @@ void AAlien_OutbreakCharacter::Throw_Update()
 
 void AAlien_OutbreakCharacter::Throw_Exit()
 {
-	isThrowing = false;
+
 	FSMUpdate(IDLE);
 
 }

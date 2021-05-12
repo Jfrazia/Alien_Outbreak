@@ -65,7 +65,7 @@ void ARockProjectileActor::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, A
 
 			this->Destroy();
 		} else{
-			playerCheckGrab
+			//playerCheckGrab
 		  }
 	}
 	else if (OtherActor->IsA(AAlien_BreakOutBossOne::StaticClass()) || OtherActor->IsA(ARockProjectileActor::StaticClass())) 
