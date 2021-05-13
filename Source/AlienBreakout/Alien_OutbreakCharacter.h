@@ -78,6 +78,9 @@ public:
 		bool isAttacking;
 
 	UPROPERTY(BlueprintReadOnly)
+		bool isGrabbing;
+
+	UPROPERTY(BlueprintReadOnly)
 		bool isHolding;
 
 	UPROPERTY(BlueprintReadOnly)
@@ -88,6 +91,20 @@ public:
 
 	UPROPERTY(BlueprintReadOnly)
 		int attackTimer;
+
+	UPROPERTY(BlueprintReadOnly)
+		int grabTimerConst;
+
+	UPROPERTY(BlueprintReadOnly)
+		int grabTimer;
+
+	UPROPERTY(BlueprintReadOnly)
+		int throwTimerConst;
+
+	UPROPERTY(BlueprintReadOnly)
+		int throwTimer;
+
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -107,7 +124,7 @@ public:
 
 	void damagePlayer(float damageTaken, float knockback);
 
-	void processHit();
+	void processHit(float damageTaken, float knockback);
 
 	void playerCheckGrab();
 
