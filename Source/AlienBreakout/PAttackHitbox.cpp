@@ -12,16 +12,16 @@ APAttackHitbox::APAttackHitbox()
 {
 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
-	SphereMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("SphereMesh"));
+    Mesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh"));
 
-	static ConstructorHelpers::FObjectFinder<UStaticMesh>SphereMeshAsset(TEXT("StaticMesh'/Engine/BasicShapes/Sphere.Sphere'"));
-	SphereMesh->SetStaticMesh(SphereMeshAsset.Object);
-	SphereMesh->SetCollisionProfileName(TEXT("OverlapAll"));
+	static ConstructorHelpers::FObjectFinder<UStaticMesh>SphereMeshAsset(TEXT("StaticMesh'/Game/Objects/Rocks/UnwrappedLowPolyRock2.UnwrappedLowPolyRock2'"));
+	Mesh->SetStaticMesh(SphereMeshAsset.Object);
+	Mesh->SetCollisionProfileName(TEXT("OverlapAll"));
 
 
 	Speed = 20.0;
 
-	RootComponent = SphereMesh;
+	RootComponent = Mesh;
 
 	timeTick = 0;
 	timeToLive = 7;
@@ -32,9 +32,9 @@ void APAttackHitbox::BeginPlay()
 {
 	Super::BeginPlay();
 
-	SetActorScale3D(GetActorScale3D() * 0.5f);
+	SetActorScale3D(GetActorScale3D() * 1.5f);
 
-	SphereMesh->OnComponentBeginOverlap.AddDynamic(this, &APAttackHitbox::OnOverlapBegin);
+	Mesh->OnComponentBeginOverlap.AddDynamic(this, &APAttackHitbox::OnOverlapBegin);
 	forward = GetActorForwardVector();
 }
 
@@ -59,7 +59,7 @@ void APAttackHitbox::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor*
 	if (OtherActor->IsA(AAlien_BreakOutBossOne::StaticClass())) {
 		UE_LOG(LogTemp, Warning, TEXT("Player hit boss!"));
 
-		((AAlien_BreakOutBossOne*)OtherActor)->hitByPlayer(0.025f);
+		((AAlien_BreakOutBossOne*)OtherActor)->hitByPlayer(0.0095f);
 		this->Destroy();
 	}else
 		//don't delete, will break game

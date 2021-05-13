@@ -38,6 +38,13 @@ private:
 
 	bool specialRushing;
 	int specialRushStage;
+
+	USoundWave* TeleportSound1;
+	USoundWave* TeleportSound2;
+	USoundWave* TeleportSound3;
+	USoundWave* TeleportSound4;
+	USoundWave* TeleportSound5;
+	void playTeleportSound(int num);
 	
 	int maxNumRock;
 	int rockLeft;

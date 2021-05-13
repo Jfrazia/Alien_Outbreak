@@ -33,7 +33,7 @@ AAlien_OutbreakCharacter::AAlien_OutbreakCharacter()
 	GetCharacterMovement()->RotationRate = FRotator(0.0f, 1500.0f, 0.0f); // ...at this rotation rate
 	GetCharacterMovement()->GravityScale = 2.5f;
 	GetCharacterMovement()->AirControl = 0.80f;
-	GetCharacterMovement()->JumpZVelocity = 1000.f * 1.65;
+	GetCharacterMovement()->JumpZVelocity = 1000.f * 1.75;
 	GetCharacterMovement()->GroundFriction = 3.f;
 	GetCharacterMovement()->MaxWalkSpeed = 600.f * 1.4;
 	GetCharacterMovement()->MaxFlySpeed = 600.f;
@@ -134,7 +134,7 @@ void AAlien_OutbreakCharacter::Tick(float DeltaTime)
 	if (throwTimer >= 0 && isThrowing)
 		throwTimer--;
 
-	if (throwTimer <= 0)
+	if (throwTimer <= 0 && isThrowing)
 		FSMUpdate(IDLE);
 }
 //////////////////////////////////////////////////////////////////////////
@@ -453,7 +453,8 @@ void AAlien_OutbreakCharacter::Idle_Update()
 
 	isAttacking = false;
 	isThrowing = false;
-	
+	UE_LOG(LogTemp, Warning, TEXT("IDle"));
+
 	// Called once a frame when in the IDLE GameStates state
 	// Implement functionality for Idle...
 }
@@ -546,9 +547,9 @@ void AAlien_OutbreakCharacter::Attack_Update()
 	// Implement functionality for Retreat...
 	FVector loc = GetActorLocation();
 	if (facingRight)
-		loc.Y += -70.f;
+		loc.Y += -100.f;
 	else
-		loc.Y += 70.f;
+		loc.Y += 100.f;
 
 	isAttacking = true;
 	//Creates the sphere infront of the player. 
@@ -638,11 +639,14 @@ void AAlien_OutbreakCharacter::Throw_Update()
 	throwTimer = throwTimerConst;
 	isHolding = false;
 	isThrowing = true;
+
 	FVector loc = GetActorLocation();
 	if (facingRight)
 		loc.Y += -70.f;
 	else
 		loc.Y += 70.f;
+
+	
 	//Creates the sphere infront of the player. 
 	//can use facing right to make it face the right way.
 	//When it collides with the boss, it'll do damage.

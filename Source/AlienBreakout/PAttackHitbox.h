@@ -14,7 +14,7 @@ class ALIENBREAKOUT_API APAttackHitbox : public AActor
 public:
 	// Sets default values for this actor's properties
 	APAttackHitbox();
-	class UStaticMeshComponent* SphereMesh;
+	class UStaticMeshComponent* Mesh;
 	float Speed;
 	FVector forward;
 
@@ -32,6 +32,5 @@ public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
-	void DeleteBullet();
 
 };

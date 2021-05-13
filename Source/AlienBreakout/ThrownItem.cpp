@@ -14,14 +14,14 @@ AThrownItem::AThrownItem()
 
 	Mesh = CreateDefaultSubobject<UStaticMeshComponent>("Mesh");
 
-	static ConstructorHelpers::FObjectFinder<UStaticMesh>SphereMeshAsset(TEXT("StaticMesh'/Game/Objects/Rocks/UnwrappedLowPolyRock2.UnwrappedLowPolyRock2'"));
+	static ConstructorHelpers::FObjectFinder<UStaticMesh>SphereMeshAsset(TEXT("StaticMesh'/Game/Assets/Models/Environment/Rock2_Textured.Rock2_Textured'"));
 
 	
 	Mesh->SetStaticMesh(SphereMeshAsset.Object);
 	Mesh->SetCollisionProfileName(TEXT("OverlapAll"));
 
 
-	Speed = 10.0;
+	Speed = 18.0;
 
 	RootComponent = Mesh;
 
@@ -32,7 +32,12 @@ AThrownItem::AThrownItem()
 void AThrownItem::BeginPlay()
 {
 	Super::BeginPlay();
-	
+
+	SetActorScale3D(GetActorScale3D() * .5f);
+
+
+	Mesh->OnComponentBeginOverlap.AddDynamic(this, &AThrownItem::OnOverlapBegin);
+	forward = GetActorForwardVector();
 }
 
 // Called every frame
@@ -53,9 +58,11 @@ void AThrownItem::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* Ot
 	if (OtherActor->IsA(AAlien_BreakOutBossOne::StaticClass())) {
 		UE_LOG(LogTemp, Warning, TEXT("Player hit boss!"));
 
-		((AAlien_BreakOutBossOne*)OtherActor)->hitByPlayer(0.05f);
+		((AAlien_BreakOutBossOne*)OtherActor)->hitByPlayer(0.025f);
 		this->Destroy();
-	}
+	}else
+		//don't delete, will break game
+		this->Destroy();
 
 }
 

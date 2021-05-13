@@ -57,11 +57,38 @@ AAlien_BreakOutBossOne::AAlien_BreakOutBossOne()
 
 	static ConstructorHelpers::FObjectFinder<UParticleSystem> Particle(TEXT("/Game/StarterContent/Particles/P_Explosion.P_Explosion"));
 	ParticleTeleport = Particle.Object;
+
+
+	// Loading  Sounds
+	static ConstructorHelpers::FObjectFinder<USoundWave> TeleportSound1(TEXT("SoundWave'/Game/Objects/Sounds/Telekinesis1.Telekinesis1'"));
+	TeleportSound1 = TeleportSound1.Object;
+	static ConstructorHelpers::FObjectFinder<USoundWave> TeleportSound2(TEXT("SoundWave'/Game/Objects/Sounds/Telekinesis2.Telekinesis2'"));
+	TeleportSound2 = TeleportSound2.Object;
+	static ConstructorHelpers::FObjectFinder<USoundWave> TeleportSound3(TEXT("SoundWave'/Game/Objects/Sounds/Telekinesis3.Telekinesis3'"));
+	TeleportSound3 = TeleportSound3.Object;
+	static ConstructorHelpers::FObjectFinder<USoundWave> TeleportSound4(TEXT("SoundWave'/Game/Objects/Sounds/Telekinesis4.Telekinesis4'"));
+	TeleportSound4 = TeleportSound4.Object;
+	static ConstructorHelpers::FObjectFinder<USoundWave> TeleportSound5(TEXT("SoundWave'/Game/Objects/Sounds/Telekinesis5.Telekinesis5'"));
+	TeleportSound5 = TeleportSound5.Object;
 }
 
 void AAlien_BreakOutBossOne::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
+}
+
+void AAlien_BreakOutBossOne::playTeleportSound(int num)
+{
+	switch (num) 
+	{
+	case 1:  UGameplayStatics::PlaySound2D(this, TeleportSound1); break;
+	case 2:  UGameplayStatics::PlaySound2D(this, TeleportSound2); break;
+	case 3:  UGameplayStatics::PlaySound2D(this, TeleportSound3); break;
+	case 4:  UGameplayStatics::PlaySound2D(this, TeleportSound4); break;
+	case 5:  UGameplayStatics::PlaySound2D(this, TeleportSound5); break;
+	default:  UGameplayStatics::PlaySound2D(this, TeleportSound1); break;
+	}
+
 }
 
 // Called when the game starts or when spawned
@@ -338,7 +365,7 @@ void AAlien_BreakOutBossOne::Tick(float DeltaTime)
 void AAlien_BreakOutBossOne::hitByPlayer(float minsHP) {
 	this->HP -= minsHP;
 	if (HP <= 0.f) {
-		UGameplayStatics::OpenLevel(GetWorld(), "End");
+		UGameplayStatics::OpenLevel(GetWorld(), "Credits");
 		// Death
 	}
 }
