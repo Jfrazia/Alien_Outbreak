@@ -34,7 +34,7 @@ void APAttackHitbox::BeginPlay()
 
 	SetActorScale3D(GetActorScale3D() * 0.5f);
 
-	//SphereMesh->OnComponentBeginOverlap.AddDynamic(this, &APAttackHitbox::OnOverlapBegin);
+	SphereMesh->OnComponentBeginOverlap.AddDynamic(this, &APAttackHitbox::OnOverlapBegin);
 	forward = GetActorForwardVector();
 }
 
@@ -59,7 +59,7 @@ void APAttackHitbox::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor*
 	if (OtherActor->IsA(AAlien_BreakOutBossOne::StaticClass())) {
 		UE_LOG(LogTemp, Warning, TEXT("Player hit boss!"));
 
-		((AAlien_BreakOutBossOne*)OtherActor)->hitByPlayer(0.0075f);
+		((AAlien_BreakOutBossOne*)OtherActor)->hitByPlayer(0.025f);
 		this->Destroy();
 	}else
 		//don't delete, will break game

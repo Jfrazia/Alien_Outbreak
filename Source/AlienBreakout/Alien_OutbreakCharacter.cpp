@@ -7,10 +7,6 @@
 
 #include "Components/PrimitiveComponent.h"
 
-#include "Internationalization/Text.h"
-
-#include <string> 
-
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/InputComponent.h"
@@ -31,21 +27,6 @@ AAlien_OutbreakCharacter::AAlien_OutbreakCharacter()
 	bUseControllerRotationYaw = false;
 	bUseControllerRotationRoll = false;
 
-	// Create a camera boom attached to the root (capsule)
-	/*
-	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
-	CameraBoom->SetupAttachment(RootComponent);
-	CameraBoom->SetUsingAbsoluteRotation(true); // Rotation of the character should not affect rotation of boom
-	CameraBoom->bDoCollisionTest = false;
-	CameraBoom->TargetArmLength = 500.f;
-	CameraBoom->SocketOffset = FVector(0.f, 0.f, 75.f);
-	CameraBoom->SetRelativeRotation(FRotator(0.f, 180.f, 0.f));
-
-	// Create a camera and attach to boom
-	SideViewCameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("SideViewCamera"));
-	SideViewCameraComponent->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
-	SideViewCameraComponent->bUsePawnControlRotation = false; // We don't want the controller rotating the camera
-	*/
 
 	// Configure character movement
 	GetCharacterMovement()->bOrientRotationToMovement = true; // Face in the direction we are moving..
@@ -69,6 +50,12 @@ AAlien_OutbreakCharacter::AAlien_OutbreakCharacter()
 
 	attackTimerConst = 20;
 	attackTimer = 0;
+
+	grabTimerConst = 75;
+	grabTimer = 0;
+
+	throwTimerConst = 75;
+	throwTimer = 0;
 
 	// Loading Hurt Sounds
 	static ConstructorHelpers::FObjectFinder<USoundWave> Hurt1(TEXT("SoundWave'/Game/Sounds/Hurt1'"));
@@ -97,23 +84,21 @@ AAlien_OutbreakCharacter::AAlien_OutbreakCharacter()
 	isHolding = false;
 
 	isThrowing = false;
+
+	isGrabbing = false;
 }
 
 void AAlien_OutbreakCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 
-	//auto Widget = CreateWidget<UPlayerHPWidget>(UGameplayStatics::GetPlayerController(this, 0), WidgetClass);
-	//Widget->Player = this;
-	//Widget->AddToViewport();
 }
 
 void AAlien_OutbreakCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	// Adjust camera
-	//AdjustCamera();
+	
 	
 	
 	// Keep player in right Axis
@@ -135,7 +120,21 @@ void AAlien_OutbreakCharacter::Tick(float DeltaTime)
 
 	if(attackTimer >= 0) 
 		attackTimer--;
+
 	if (attackTimer <= 0 && isAttacking)
+		FSMUpdate(IDLE);
+
+
+	if (grabTimer >= 0 && isGrabbing)
+		grabTimer--;
+
+	if (grabTimer <= 0)
+		isGrabbing = false;
+
+	if (throwTimer >= 0 && isThrowing)
+		throwTimer--;
+
+	if (throwTimer <= 0)
 		FSMUpdate(IDLE);
 }
 //////////////////////////////////////////////////////////////////////////
@@ -255,13 +254,15 @@ void AAlien_OutbreakCharacter::PAttack()
 	if(!isHolding)
 		FSMUpdate(ATTACK);
 	else
-		SetFSMState(GRAB);
+		FSMUpdate(THROW);
 }
 
 void AAlien_OutbreakCharacter::playerCheckGrab()
 {
 	//handles grabbing said item, and setting the character to the grab state
-	FSMUpdate(GRAB);
+	if(!isGrabbing && !isHolding)
+		FSMUpdate(GRAB);
+
 
 }
 
@@ -277,9 +278,15 @@ void AAlien_OutbreakCharacter::damagePlayer(float damageTaken, float knockback)
 	((AAlien_OutbreakCharacter*)GetWorld()->GetFirstPlayerController()->GetPawn())->beingHit(damageTaken, knockback);
 }
 
-void AAlien_OutbreakCharacter::processHit()
+void AAlien_OutbreakCharacter::processHit(float damageTaken, float knockback)
 {
-
+	if (isGrabbing && !isHolding) {
+		isHolding = true;
+		UE_LOG(LogTemp, Warning, TEXT("Hands Got Caught"));
+	}
+	else {
+		damagePlayer(damageTaken, knockback);
+	}
 }
 
 /// 
@@ -443,9 +450,10 @@ void AAlien_OutbreakCharacter::Idle_Enter()
 
 void AAlien_OutbreakCharacter::Idle_Update()
 {
-	UE_LOG(LogTemp, Warning, TEXT("Idle_Update"));
 
 	isAttacking = false;
+	isThrowing = false;
+	
 	// Called once a frame when in the IDLE GameStates state
 	// Implement functionality for Idle...
 }
@@ -464,7 +472,6 @@ void AAlien_OutbreakCharacter::Move_Enter()
 void AAlien_OutbreakCharacter::Move_Update()
 {
 	
-	UE_LOG(LogTemp, Warning, TEXT("Move_Update"));
 }
 
 void AAlien_OutbreakCharacter::Move_Exit()
@@ -480,28 +487,21 @@ void AAlien_OutbreakCharacter::Jump_Enter()
 
 void AAlien_OutbreakCharacter::Jump_Update()
 {
-	// Called once a frame when in the IDLE GameStates state
-	// Implement functionality for Idle...
-	UE_LOG(LogTemp, Warning, TEXT("SAW"));
+	
 
 }
 
 void AAlien_OutbreakCharacter::Jump_Exit()
 {
-	// Implement any functionality for leaving the Idle state
 }
 
 void AAlien_OutbreakCharacter::Dash_Enter()
 {
-	// Change to GameEvents to Update when called
 	Event = GameEvents::ON_UPDATE;
 }
 
 void AAlien_OutbreakCharacter::Dash_Update()
 {
-	// Called once a frame when in the RETREAT GameStates state
-	// Implement functionality for Retreat...
-	isAttacking = false;
 
 	Avoiding = true;
 
@@ -517,7 +517,6 @@ void AAlien_OutbreakCharacter::Dash_Update()
 
 	//this->SetActorEnableCollision(false);
 	GetWorld()->GetTimerManager().SetTimer(AvoidTimerHandle, this, &AAlien_OutbreakCharacter::AvoidStop, AvoidTime, false);
-	UE_LOG(LogTemp, Warning, TEXT("Dash Up"));
 	SetFSMState(DASH);
 	
 
@@ -527,7 +526,6 @@ void AAlien_OutbreakCharacter::Dash_Update()
 void AAlien_OutbreakCharacter::Dash_Exit()
 {
 	// Implement any functionality for leaving the Retreat state
-	UE_LOG(LogTemp, Warning, TEXT("Dash leave"));
 	Avoiding = false;
 	FSMUpdate(IDLE);
 
@@ -539,7 +537,6 @@ void AAlien_OutbreakCharacter::Attack_Enter()
 	// Change to GameEvents to Update when called
 	Event = GameEvents::ON_UPDATE;
 	//Turn the Gun the right opacity
-	attackTimer = attackTimerConst;
 }
 
 void AAlien_OutbreakCharacter::Attack_Update()
@@ -561,7 +558,6 @@ void AAlien_OutbreakCharacter::Attack_Update()
 
 
 	APAttackHitbox* a = GetWorld()->SpawnActor<APAttackHitbox>(loc, GetActorRotation());
-	UE_LOG(LogTemp, Warning, TEXT("Attack up"));
 }
 
 void AAlien_OutbreakCharacter::Attack_Exit()
@@ -571,9 +567,6 @@ void AAlien_OutbreakCharacter::Attack_Exit()
 	// 
 	// 
 	// Implement any functionality for leaving the Retreat state
-	UE_LOG(LogTemp, Warning, TEXT("Attack Exit"));
-	FSMUpdate(IDLE);
-
 
 }
 
@@ -623,8 +616,10 @@ void AAlien_OutbreakCharacter::Grab_Update()
 {
 	// Called once a frame when in the RETREAT GameStates state
 	// Implement functionality for Retreat...
+	UE_LOG(LogTemp, Warning, TEXT("Catch these hands"));
 	isAttacking = false;
-	isHolding = true;
+	grabTimer = grabTimerConst;
+	isGrabbing = true;
 }
 
 void AAlien_OutbreakCharacter::Grab_Exit()
@@ -640,6 +635,8 @@ void AAlien_OutbreakCharacter::Throw_Enter()
 
 void AAlien_OutbreakCharacter::Throw_Update()
 {
+	throwTimer = throwTimerConst;
+	isHolding = false;
 	isThrowing = true;
 	FVector loc = GetActorLocation();
 	if (facingRight)
@@ -651,9 +648,9 @@ void AAlien_OutbreakCharacter::Throw_Update()
 	//When it collides with the boss, it'll do damage.
 	//I have to make a timer, that starts when created and deletes after it is gone.
 
+	UE_LOG(LogTemp, Warning, TEXT("Thrown these hands"));
 
 	AThrownItem* i = GetWorld()->SpawnActor<AThrownItem>(loc, GetActorRotation());
-	SetFSMState(THROW);
 
 }
 

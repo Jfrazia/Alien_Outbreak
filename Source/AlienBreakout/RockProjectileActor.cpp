@@ -58,15 +58,13 @@ void ARockProjectileActor::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, A
 		float rockY = this->GetActorLocation().Y;
 		AAlien_OutbreakCharacter* player = (AAlien_OutbreakCharacter*)GetWorld()->GetFirstPlayerController()->GetPawn();
 		if (!player->Avoiding && !player->Invincible) {
-			player->damagePlayer(0.04f, rockY);
+			player->processHit(0.04f, rockY);
 
 			if (ParticleRock)
 				UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), ParticleRock, GetActorLocation());
 
 			this->Destroy();
-		} else{
-			//playerCheckGrab
-		  }
+		} 
 	}
 	else if (OtherActor->IsA(AAlien_BreakOutBossOne::StaticClass()) || OtherActor->IsA(ARockProjectileActor::StaticClass())) 
 	{
