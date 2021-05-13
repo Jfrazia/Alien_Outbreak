@@ -60,16 +60,16 @@ AAlien_BreakOutBossOne::AAlien_BreakOutBossOne()
 
 
 	// Loading  Sounds
-	static ConstructorHelpers::FObjectFinder<USoundWave> TeleportSound1(TEXT("SoundWave'/Game/Objects/Sounds/Telekinesis1.Telekinesis1'"));
-	TeleportSound1 = TeleportSound1.Object;
-	static ConstructorHelpers::FObjectFinder<USoundWave> TeleportSound2(TEXT("SoundWave'/Game/Objects/Sounds/Telekinesis2.Telekinesis2'"));
-	TeleportSound2 = TeleportSound2.Object;
-	static ConstructorHelpers::FObjectFinder<USoundWave> TeleportSound3(TEXT("SoundWave'/Game/Objects/Sounds/Telekinesis3.Telekinesis3'"));
-	TeleportSound3 = TeleportSound3.Object;
-	static ConstructorHelpers::FObjectFinder<USoundWave> TeleportSound4(TEXT("SoundWave'/Game/Objects/Sounds/Telekinesis4.Telekinesis4'"));
-	TeleportSound4 = TeleportSound4.Object;
-	static ConstructorHelpers::FObjectFinder<USoundWave> TeleportSound5(TEXT("SoundWave'/Game/Objects/Sounds/Telekinesis5.Telekinesis5'"));
-	TeleportSound5 = TeleportSound5.Object;
+	static ConstructorHelpers::FObjectFinder<USoundWave> Teleport1(TEXT("SoundWave'/Game/Objects/Sounds/Telekinesis1.Telekinesis1'"));
+	TeleportSound1 = Teleport1.Object;
+	static ConstructorHelpers::FObjectFinder<USoundWave> Teleport2(TEXT("SoundWave'/Game/Objects/Sounds/Telekinesis2.Telekinesis2'"));
+	TeleportSound2 = Teleport2.Object;
+	static ConstructorHelpers::FObjectFinder<USoundWave> Teleport3(TEXT("SoundWave'/Game/Objects/Sounds/Telekinesis3.Telekinesis3'"));
+	TeleportSound3 = Teleport3.Object;
+	static ConstructorHelpers::FObjectFinder<USoundWave> Teleport4(TEXT("SoundWave'/Game/Objects/Sounds/Telekinesis4.Telekinesis4'"));
+	TeleportSound4 = Teleport4.Object;
+	static ConstructorHelpers::FObjectFinder<USoundWave> Teleport5(TEXT("SoundWave'/Game/Objects/Sounds/Telekinesis5.Telekinesis5'"));
+	TeleportSound5 = Teleport5.Object;
 }
 
 void AAlien_BreakOutBossOne::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -129,6 +129,8 @@ void AAlien_BreakOutBossOne::TeleportTo(FVector Location) {
 
 	if (ParticleTeleport)
 		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), ParticleTeleport, GetActorLocation());
+
+	playTeleportSound(FMath::RandRange(1, 5));
 
 	SetActorLocation(Location);
 
@@ -365,7 +367,7 @@ void AAlien_BreakOutBossOne::Tick(float DeltaTime)
 void AAlien_BreakOutBossOne::hitByPlayer(float minsHP) {
 	this->HP -= minsHP;
 	if (HP <= 0.f) {
-		UGameplayStatics::OpenLevel(GetWorld(), "Credits");
+		UGameplayStatics::OpenLevel(GetWorld(), "Win");
 		// Death
 	}
 }

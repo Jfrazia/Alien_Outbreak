@@ -6,6 +6,8 @@
 #include "GameFramework/Character.h"
 #include "RockProjectileActor.h"
 #include "Runtime/Engine/Classes/Particles/ParticleSystemComponent.h"
+#include "Sound/SoundCue.h"
+#include "Components/AudioComponent.h"  
 #include "Alien_BreakOutBossOne.generated.h"
 
 UCLASS()

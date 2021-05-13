@@ -5,6 +5,10 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "Runtime/Engine/Classes/Particles/ParticleSystemComponent.h"
+
+#include "Sound/SoundCue.h"
+#include "Components/AudioComponent.h"
+
 #include "RockProjectileActor.generated.h"
 
 UCLASS()
@@ -19,6 +23,11 @@ public:
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
+
+private:
+	USoundWave* StoneSound1;
+	USoundWave* StoneSound2;
+	void playStoneSound(int num);
 
 public:
 	// Called every frame

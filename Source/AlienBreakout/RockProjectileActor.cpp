@@ -48,6 +48,12 @@ ARockProjectileActor::ARockProjectileActor()
 
 	static ConstructorHelpers::FObjectFinder<UParticleSystem> Particle(TEXT("ParticleSystem'/Game/StarterContent/Particles/P_Explosion.P_Explosion'"));
 	ParticleRock = Particle.Object;
+
+	static ConstructorHelpers::FObjectFinder<USoundWave> Stone1(TEXT("SoundWave'/Game/Objects/Sounds/Stone1.Stone1'"));
+	StoneSound1 = Stone1.Object;
+	static ConstructorHelpers::FObjectFinder<USoundWave> Stone2(TEXT("SoundWave'/Game/Objects/Sounds/Stone1.Stone1'"));
+	StoneSound2 = Stone2.Object;
+
 }
 
 
@@ -63,6 +69,8 @@ void ARockProjectileActor::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, A
 			if (ParticleRock)
 				UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), ParticleRock, GetActorLocation());
 
+			playStoneSound(FMath::RandRange(1, 2));
+
 			this->Destroy();
 		} 
 	}
@@ -76,6 +84,7 @@ void ARockProjectileActor::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, A
 		if (hp <= 0) {
 			if (ParticleRock)
 				UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), ParticleRock, GetActorLocation());
+			playStoneSound(FMath::RandRange(1, 2));
 			this->Destroy();
 		}
 		
@@ -158,4 +167,13 @@ void ARockProjectileActor::readyFire() {
 	direction.Normalize();
 	firing = true;
 	timeTick = 0;
+}
+
+void ARockProjectileActor::playStoneSound(int num) {
+	// Random Play hurt sound
+	switch (num) {
+	case 1: UGameplayStatics::PlaySound2D(this, StoneSound1); break;
+	case 2: UGameplayStatics::PlaySound2D(this, StoneSound2); break;
+	default: UGameplayStatics::PlaySound2D(this, StoneSound1); break;
+	}
 }
