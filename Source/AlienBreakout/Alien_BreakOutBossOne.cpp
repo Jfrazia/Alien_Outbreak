@@ -112,15 +112,16 @@ void AAlien_BreakOutBossOne::Teleport() {
 
 		TeleportTo(GetCloseLocation());
 
-		GetWorld()->GetTimerManager().SetTimer(TeleportTimerHandle, this, &AAlien_BreakOutBossOne::Teleport, teleportCoolDown, false);
-
 		GetWorld()->GetTimerManager().SetTimer(RushAttackWaitTimerHandle, this, &AAlien_BreakOutBossOne::RushAttack, rushAttackWaitTime, false);
 	}
 	else {
 		int index = FMath::RandRange(0, 6);
 		TeleportTo(teleportLocation[index]);
-		GetWorld()->GetTimerManager().SetTimer(TeleportTimerHandle, this, &AAlien_BreakOutBossOne::Teleport, teleportCoolDown, false);
+		
 	}
+
+	GetWorld()->GetTimerManager().SetTimer(TeleportTimerHandle, this, &AAlien_BreakOutBossOne::Teleport, teleportCoolDown, false);
+	GetWorld()->GetTimerManager().SetTimer(AttackTimerHandle, this, &AAlien_BreakOutBossOne::RockAttack, attackCoolDown, false);
 }
 
 void AAlien_BreakOutBossOne::TeleportTo(FVector Location) {
