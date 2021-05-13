@@ -19,12 +19,12 @@ ARockProjectileActor::ARockProjectileActor()
 	int rand = FMath::RandRange(1, 4);
 	FString assetLocation;
 	switch (rand) {
-	case 1: assetLocation = TEXT("StaticMesh'/Game/Objects/Rock'"); break;
-	case 2: assetLocation = TEXT("StaticMesh'/Game/Objects/Rock2'"); break;
-	case 3: assetLocation = TEXT("StaticMesh'/Game/Objects/Rock3'"); break;
-	case 4: assetLocation = TEXT("StaticMesh'/Game/Objects/Rock4'"); break;
+	case 1: assetLocation = TEXT("StaticMesh'/Game/Objects/Rock.Rock'"); break;
+	case 2: assetLocation = TEXT("StaticMesh'/Game/Objects/Rock2.Rock2'"); break;
+	case 3: assetLocation = TEXT("StaticMesh'/Game/Objects/Rock3.Rock3'"); break;
+	case 4: assetLocation = TEXT("StaticMesh'/Game/Objects/Rock4.Rock4'"); break;
 		//case 5: assetLocation = TEXT("StaticMesh'/Game/Objects/UnwrappedRock'"); break;
-	default: assetLocation = TEXT("StaticMesh'/Game/Objects/Rock'"); break;
+	default: assetLocation = TEXT("StaticMesh'/Game/Objects/Rock.Rock'"); break;
 	}
 
 	ConstructorHelpers::FObjectFinder<UStaticMesh>rockAsset(*assetLocation);
